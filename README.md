@@ -28,27 +28,28 @@
     ```sh
     python3 main.py
     ```
-    ### MacOS
 
-    1. Open Terminal.
-    2. Navigate to the `backend` folder:
-        ```sh
-        cd FinSim/backend
-        ```
-    3. Activate the virtual environment:
-        ```sh
-        python3 -m venv venv # command could be python or python3 
-        source venv/bin/activate
-        ```
-    4. Install the dependencies:
-        ```sh
-        python3 -m pip install -r requirements.txt
-        ```
-    5. Run the Backend server:
-        ```sh
-        python3 main.py
-        ```
+### MacOS
+
+1. Open Terminal.
+2. Navigate to the `backend` folder:
+    ```sh
+    cd FinSim/backend
     ```
+3. Activate the virtual environment:
+    ```sh
+    python3 -m venv venv # command could be python or python3 
+    source venv/bin/activate
+    ```
+4. Install the dependencies:
+    ```sh
+    python3 -m pip install -r requirements.txt
+    ```
+5. Run the Backend server:
+    ```sh
+    python3 main.py
+    ```
+```
 
 ## Committing Code Changes
 
