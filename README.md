@@ -8,7 +8,11 @@
     git clone https://github.com/Nate8888/FinSim.git
     ```
 
-### Windows
+## Running the Application
+
+### Backend Setup
+
+#### Windows
 
 1. Open Command Prompt.
 2. Navigate to the `backend` folder:
@@ -20,16 +24,16 @@
     python3 -m venv venv # command could be python or python3 
     .\venv\Scripts\activate     # On Windows
     ```
-4. Install the dependencies
+4. Install the dependencies:
     ```sh
     python3 -m pip install -r requirements.txt # Make sure you are inside the backend folder
     ```
-5. Run the Backend server
+5. Run the Backend server:
     ```sh
     python3 main.py
     ```
 
-### MacOS
+#### MacOS
 
 1. Open Terminal.
 2. Navigate to the `backend` folder:
@@ -49,7 +53,21 @@
     ```sh
     python3 main.py
     ```
-```
+### Frontend Setup
+
+1. Open a terminal or command prompt.
+2. Navigate to the `frontend/finsim` folder:
+    ```sh
+    cd FinSim/frontend/finsim
+    ```
+3. Install the dependencies:
+    ```sh
+    npm install
+    ```
+4. Run the Frontend server:
+    ```sh
+    npm run dev
+    ```
 
 ## Committing Code Changes
 
