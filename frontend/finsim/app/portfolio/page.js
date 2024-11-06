@@ -124,8 +124,8 @@ export default function Component() {
         </Card>
 
         {/* Asset Summary */}
-        <div className="mb-6 space-y-4 rounded-xl bg-yellow-50 p-4">
-          <div className="flex justify-between">
+        <div className="mb-6 rounded-xl bg-yellow-100 p-6 shadow-lg">
+          <div className="flex justify-between mb-4">
             <div>
               <div className="text-sm text-gray-600">Cash:</div>
               <div className="text-lg font-semibold">$115,000.00</div>
@@ -137,26 +137,28 @@ export default function Component() {
           </div>
           
           {/* Asset Cards */}
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="overflow-hidden">
-              <CardContent className="flex items-center gap-4 p-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                  <ChartIcon className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Apple</h3>
-                    <span className="text-sm text-green-600">+5.50%</span>
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="overflow-hidden bg-white">
+                <CardContent className="flex items-center gap-4 p-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                    <ChartIcon className="h-6 w-6 text-blue-600" />
                   </div>
-                  <div className="mt-1 flex justify-between text-sm text-gray-600">
-                    <span>Holdings: $150,000</span>
-                    <span>1,000 shares</span>
-                    <span>5.5%</span>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Apple</h3>
+                      <span className="text-sm text-green-600">+5.50%</span>
+                    </div>
+                    <div className="mt-1 flex justify-between text-sm text-gray-600">
+                      <span>Holdings: $150,000</span>
+                      <span>1,000 shares</span>
+                      <span>5.5%</span>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
