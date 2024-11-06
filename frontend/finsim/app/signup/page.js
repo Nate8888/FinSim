@@ -22,11 +22,11 @@ export default function Signup() {
           <form className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">EMAIL</Label>
-              <Input id="email" placeholder="email" required type="email" />
+              <Input id="email" placeholder="email" required type="email" className="shadow-md"/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">PASSWORD</Label>
-              <Input id="password" placeholder="password" required type="password" />
+              <Input id="password" placeholder="password" required type="password" className="shadow-md"/>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox id="terms" required />

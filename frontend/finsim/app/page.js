@@ -47,6 +47,7 @@ export default function Signin() {
               autoCorrect="off"
               disabled={isLoading}
               required
+              className="shadow-md"
             />
           </div>
           <div className="space-y-2">
@@ -58,6 +59,7 @@ export default function Signin() {
               autoComplete="current-password"
               disabled={isLoading}
               required
+              className="shadow-md"
             />
           </div>
           <Button className="w-full bg-yellow-400 font-medium hover:bg-yellow-500 text-black" disabled={isLoading}>
