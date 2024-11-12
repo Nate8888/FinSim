@@ -70,3 +70,48 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+
+@layer components {
+  .candlestick-animation {
+    @apply relative h-full w-full overflow-hidden;
+  }
+
+  .candlestick-animation::before {
+    content: '';
+    @apply absolute h-full w-1 bg-primary;
+    animation: candlestick-move 1.5s infinite;
+  }
+
+  .candlestick-animation::after {
+    content: '';
+    @apply absolute h-3 w-3 bg-primary;
+    animation: candlestick-flicker 1.5s infinite;
+  }
+}
+
+@keyframes candlestick-move {
+  0% {
+    height: 30%;
+    top: 70%;
+  }
+  50% {
+    height: 70%;
+    top: 30%;
+  }
+  100% {
+    height: 30%;
+    top: 70%;
+  }
+}
+
+@keyframes candlestick-flicker {
+  0%, 100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(-10px);
+  }
+}
