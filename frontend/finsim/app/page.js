@@ -86,7 +86,7 @@ export default function Signin() {
           Sign in with Google
         </Button>
         <div className="mt-6 text-center text-sm">
-          <Link href="/forgot-password" className="text-primary hover:underline">
+          <Link href="/forgotpwd" className="text-primary hover:underline">
             Forgot password?
           </Link>
         </div>
