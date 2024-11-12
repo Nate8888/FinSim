@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Slider } from "@/components/ui/slider"
+import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ArrowLeft } from "lucide-react"
 import { ErrorBoundary } from 'react-error-boundary'
 import Chart from 'chart.js/auto'
 
@@ -26,13 +28,15 @@ const data = [
 ]
 
 const stocks = [
-  { id: 1, name: 'Apple', holdings: '$150,000', shares: '1,000', returnPct: '5.50%' },
-  { id: 2, name: 'Google', holdings: '$200,000', shares: '800', returnPct: '4.00%' },
-  { id: 3, name: 'Amazon', holdings: '$250,000', shares: '500', returnPct: '3.00%' },
+  { id: 1, name: 'Apple', holdings: '150,000', shares: '1,000', returnPct: '5.50' },
+  { id: 2, name: 'Google', holdings: '200,000', shares: '800', returnPct: '4.00' },
+  { id: 3, name: 'Amazon', holdings: '250,000', shares: '500', returnPct: '3.00' },
 ]
 
 export default function Component() {
   const [time, setTime] = useState(90)
+  const [selectedStock, setSelectedStock] = useState(null)
+  const [tradeAmount, setTradeAmount] = useState(0)
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
 
@@ -96,6 +100,17 @@ export default function Component() {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
+  const handleSliderChange = (value) => {
+    setTradeAmount(value[0])
+  }
+
+  const handleInputChange = (e) => {
+    const value = parseInt(e.target.value, 10)
+    if (!isNaN(value) && value >= 0 && value <= 100000) {
+      setTradeAmount(value)
+    }
+  }
+
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white pb-16">
@@ -142,28 +157,92 @@ export default function Component() {
               </div>
             </div>
             
-            {/* Asset Cards */}
+            {/* Stocks List or Trade Execution */}
             <div className="space-y-4">
-              {stocks.map((stock) => (
-                <Card key={stock.id} className="overflow-hidden bg-white">
-                  <CardContent className="flex items-center gap-4 p-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                      <ChartIcon className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{stock.name}</h3>
-                        <span className="text-sm text-green-600">{stock.returnPct}</span>
+              {selectedStock ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <Button 
+                      variant="ghost" 
+                      className="p-0 hover:bg-transparent"
+                      onClick={() => setSelectedStock(null)}
+                    >
+                      <ArrowLeft className="h-6 w-6 mr-2" />
+                      Back to Stocks
+                    </Button>
+                    <h2 className="text-xl font-bold">Execute Trade</h2>
+                  </div>
+                  <Card className="overflow-hidden bg-white">
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                        <ChartIcon className="h-6 w-6 text-blue-600" />
                       </div>
-                      <div className="mt-1 flex justify-between text-sm text-gray-600">
-                        <span>Holdings: {stock.holdings}</span>
-                        <span>{stock.shares} shares</span>
-                        <span>{stock.returnPct}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{selectedStock.name}</h3>
+                          <span className="text-sm text-green-600">+{selectedStock.returnPct}%</span>
+                        </div>
+                        <div className="mt-1 flex justify-between text-sm text-gray-600">
+                          <span>Holdings: ${selectedStock.holdings.toLocaleString()}</span>
+                          <span>{selectedStock.shares} shares</span>
+                        </div>
                       </div>
+                    </CardContent>
+                  </Card>
+                  <div className="space-y-4 mt-6">
+                    <label className="block text-sm font-medium text-gray-700">Amount:</label>
+                    <div className="flex items-center space-x-4">
+                      <Slider
+                        value={[tradeAmount]}
+                        onValueChange={handleSliderChange}
+                        max={100000}
+                        step={100}
+                        className="flex-grow"
+                      />
+                      <Input
+                        type="number"
+                        value={tradeAmount}
+                        onChange={handleInputChange}
+                        className="w-24"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <div className="flex gap-4">
+                      <Button className="flex-1 bg-green-500 hover:bg-green-600">
+                        Buy
+                      </Button>
+                      <Button className="flex-1 bg-red-500 hover:bg-red-600">
+                        Sell
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                stocks.map((stock) => (
+                  <Card key={stock.id} className="overflow-hidden bg-white">
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                        <ChartIcon className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{stock.name}</h3>
+                          <Button 
+                            className="bg-blue-500 hover:bg-blue-600"
+                            onClick={() => setSelectedStock(stock)}
+                          >
+                            Trade
+                          </Button>
+                        </div>
+                        {/* <div className="mt-1 flex justify-between text-sm text-gray-600">
+                          <span>Holdings: ${stock.holdings.toLocaleString()}</span>
+                          <span>{stock.shares} shares</span>
+                          <span>{stock.returnPct}%</span>
+                        </div> */}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -172,8 +251,8 @@ export default function Component() {
         <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
           <div className="container mx-auto flex justify-around p-2">
             {[
-              { icon: Home, label: "Portfolio", link: "/portfolio", selected: true },
-              { icon: ChartIcon, label: "Trade", link: "/trade", selected: false },
+              { icon: Home, label: "Portfolio", link: "/portfolio", selected: false },
+              { icon: ChartIcon, label: "Trade", link: "/trade", selected: true },
               { icon: Newspaper, label: "News", link: "/news", selected: false },
               { icon: Trophy, label: "Leaderboard", link: "/leaderboard", selected: false },
               { icon: Settings, label: "Settings", link: "/settings", selected: false },
