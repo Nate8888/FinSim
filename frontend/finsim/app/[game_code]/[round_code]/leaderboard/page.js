@@ -1,10 +1,12 @@
 'use client'
 
 import { Card } from "@/components/ui/card"
-import { Home, BarChartIcon as ChartIcon, Newspaper, Settings, Trophy, BookOpen, ArrowLeft } from 'lucide-react'
+import { Home, BarChartIcon as ChartIcon, Newspaper, Settings, Trophy, BookOpen, ArrowLeft, Info } from 'lucide-react'
 import { Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Tooltip as UITooltip } from "@/components/ui/tooltip"
 
 const data = [
     { round: 1, player1: 1000000, player2: 1200000, player3: 800000, player4: 950000, player5: 1100000, player6: 850000, player7: 1050000, player8: 900000 },
@@ -26,7 +28,16 @@ const players = [
     { id: 8, name: "Sophia Martinez", initials: "SM", value: 1100000, change: "+22.22%", color: "#8B0000" },
 ]
 
-export default function Leaderboard() {
+export default async function Page({ params }) {
+  const { game_code, round_code } = await params
+  return <Leaderboard game_code={game_code} round_code={round_code} />
+}
+
+function Leaderboard({ game_code, round_code }) {
+    const router = useRouter()
+    // const searchParams = useSearchParams()
+    // const game_code = searchParams.get('game_code')
+    // const round_code = searchParams.get('round_code')
     const [time, setTime] = useState(90)
 
     useEffect(() => {
@@ -49,6 +60,9 @@ export default function Leaderboard() {
                     <div className="mb-6 flex items-center justify-between">
                         <h1 className="text-2xl font-bold">LeaderBoard</h1>
                         <div className="flex items-center gap-2">
+                            <UITooltip content={`Game Code: ${game_code} | Round Code: ${round_code}`}>
+                                <Info className="h-5 w-5 text-gray-600" />
+                            </UITooltip>
                             <span className="rounded-lg bg-gray-100 px-3 py-2 font-mono text-sm">{formatTime()}</span>
                             <Button className="bg-green-600 hover:bg-green-700">Submit</Button>
                         </div>
@@ -124,16 +138,16 @@ export default function Leaderboard() {
         <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
           <div className="container mx-auto flex justify-around p-2">
             {[
-              { icon: Home, label: "Portfolio", link: "/portfolio", selected: false },
-              { icon: ChartIcon, label: "Trade", link: "/trade", selected: false },
-              { icon: Newspaper, label: "News", link: "/news", selected: false },
-              { icon: Trophy, label: "Leaderboard", link: "/leaderboard", selected: true },
-              { icon: Settings, label: "Settings", link: "/settings", selected: false },
+              { icon: Home, label: "Portfolio", link: `/${game_code}/${round_code}/portfolio`, selected: false },
+              { icon: ChartIcon, label: "Trade", link: `/${game_code}/${round_code}/trade`, selected: false },
+              { icon: Newspaper, label: "News", link: `/${game_code}/${round_code}/news`, selected: false },
+              { icon: Trophy, label: "Leaderboard", link: `/${game_code}/${round_code}/leaderboard`, selected: true },
+              { icon: Settings, label: "Settings", link: `/${game_code}/${round_code}/settings`, selected: false },
             ].map(({ icon: Icon, label, link, selected }) => (
               <a
                 key={label}
                 href={link}
-                className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600 !important" : "text-gray-600"}`}
+                className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600" : "text-gray-600"}`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="text-xs">{label}</span>

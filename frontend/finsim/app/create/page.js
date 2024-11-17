@@ -11,11 +11,26 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useRouter } from "next/navigation"
 
 export default function Create() {
     const [gameCode] = useState('XQWSA')
     const [copied, setCopied] = useState(false)
     const [players, setPlayers] = useState([])
+
+    const { isAuthenticated } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const authenticated = await isAuthenticated();
+            if (!authenticated) {
+                router.push('/');
+            }
+        };
+        checkAuth();
+    }, [router, isAuthenticated]);
 
     useEffect(() => {
         // Simulating players joining the waiting room

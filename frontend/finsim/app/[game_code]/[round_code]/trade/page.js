@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
-import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ArrowLeft } from "lucide-react"
+import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ArrowLeft, Info } from "lucide-react"
+import { Tooltip } from "@/components/ui/tooltip"
 import { ErrorBoundary } from 'react-error-boundary'
 import Chart from 'chart.js/auto'
 
@@ -33,7 +35,16 @@ const stocks = [
   { id: 3, name: 'Amazon', holdings: '250,000', shares: '500', returnPct: '3.00' },
 ]
 
-export default function Trading() {
+export default async function Page({ params }) {
+  const { game_code, round_code } = await params
+  return <Trading game_code={game_code} round_code={round_code} />
+}
+
+function Trading({ game_code, round_code }) {
+  const router = useRouter()
+  // const searchParams = useSearchParams()
+  // const game_code = searchParams.get('game_code')
+  // const round_code = searchParams.get('round_code')
   const [time, setTime] = useState(90)
   const [selectedStock, setSelectedStock] = useState(null)
   const [tradeAmount, setTradeAmount] = useState(0)
@@ -130,6 +141,9 @@ export default function Trading() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Tooltip content={`Game Code: ${game_code} | Round Code: ${round_code}`}>
+                <Info className="h-5 w-5 text-gray-600" />
+              </Tooltip>
               <span className="rounded-lg bg-gray-100 px-3 py-2 font-mono text-lg">{formatTime()}</span>
               <Button className="bg-green-600 hover:bg-green-700">Submit</Button>
             </div>
@@ -187,62 +201,62 @@ export default function Trading() {
                           <span>{selectedStock.shares} shares</span>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                  <div className="space-y-4 mt-6">
-                    <label className="block text-sm font-medium text-gray-700">Amount:</label>
-                    <div className="flex items-center space-x-4">
-                      <Slider
-                        value={[tradeAmount]}
-                        onValueChange={handleSliderChange}
-                        max={100000}
-                        step={100}
-                        className="flex-grow"
-                      />
-                      <Input
-                        type="number"
-                        value={tradeAmount}
-                        onChange={handleInputChange}
-                        className="w-24"
-                      />
-                    </div>
-                    <div className="flex gap-4">
-                      <Button className="flex-1 bg-green-500 hover:bg-green-600">
-                        Buy
-                      </Button>
-                      <Button className="flex-1 bg-red-500 hover:bg-red-600">
-                        Sell
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                stocks.map((stock) => (
-                  <Card key={stock.id} className="overflow-hidden bg-white">
-                    <CardContent className="flex items-center gap-4 p-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                        <ChartIcon className="h-6 w-6 text-blue-600" />
+                      </CardContent>
+                    </Card>
+                    <div className="space-y-4 mt-6">
+                      <label className="block text-sm font-medium text-gray-700">Amount:</label>
+                      <div className="flex items-center space-x-4">
+                        <Slider
+                          value={[tradeAmount]}
+                          onValueChange={handleSliderChange}
+                          max={100000}
+                          step={100}
+                          className="flex-grow"
+                        />
+                        <Input
+                          type="number"
+                          value={tradeAmount}
+                          onChange={handleInputChange}
+                          className="w-24"
+                        />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{stock.name}</h3>
-                          <Button 
-                            className="bg-blue-500 hover:bg-blue-600"
-                            onClick={() => setSelectedStock(stock)}
-                          >
-                            Trade
-                          </Button>
+                      <div className="flex gap-4">
+                        <Button className="flex-1 bg-green-500 hover:bg-green-600">
+                          Buy
+                        </Button>
+                        <Button className="flex-1 bg-red-500 hover:bg-red-600">
+                          Sell
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  stocks.map((stock) => (
+                    <Card key={stock.id} className="overflow-hidden bg-white">
+                      <CardContent className="flex items-center gap-4 p-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                          <ChartIcon className="h-6 w-6 text-blue-600" />
                         </div>
-                        {/* <div className="mt-1 flex justify-between text-sm text-gray-600">
-                          <span>Holdings: ${stock.holdings.toLocaleString()}</span>
-                          <span>{stock.shares} shares</span>
-                          <span>{stock.returnPct}%</span>
-                        </div> */}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold">{stock.name}</h3>
+                            <Button 
+                              className="bg-blue-500 hover:bg-blue-600"
+                              onClick={() => setSelectedStock(stock)}
+                            >
+                              Trade
+                            </Button>
+                          </div>
+                          {/* <div className="mt-1 flex justify-between text-sm text-gray-600">
+                            <span>Holdings: ${stock.holdings.toLocaleString()}</span>
+                            <span>{stock.shares} shares</span>
+                            <span>{stock.returnPct}%</span>
+                          </div> */}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
             </div>
           </div>
         </div>
@@ -251,16 +265,16 @@ export default function Trading() {
         <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
           <div className="container mx-auto flex justify-around p-2">
             {[
-              { icon: Home, label: "Portfolio", link: "/portfolio", selected: false },
-              { icon: ChartIcon, label: "Trade", link: "/trade", selected: true },
-              { icon: Newspaper, label: "News", link: "/news", selected: false },
-              { icon: Trophy, label: "Leaderboard", link: "/leaderboard", selected: false },
-              { icon: Settings, label: "Settings", link: "/settings", selected: false },
+              { icon: Home, label: "Portfolio", link: `/${game_code}/${round_code}/portfolio`, selected: false },
+              { icon: ChartIcon, label: "Trade", link: `/${game_code}/${round_code}/trade`, selected: true },
+              { icon: Newspaper, label: "News", link: `/${game_code}/${round_code}/news`, selected: false },
+              { icon: Trophy, label: "Leaderboard", link: `/${game_code}/${round_code}/leaderboard`, selected: false },
+              { icon: Settings, label: "Settings", link: `/${game_code}/${round_code}/settings`, selected: false },
             ].map(({ icon: Icon, label, link, selected }) => (
               <a
                 key={label}
                 href={link}
-                className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600 !important" : "text-gray-600"}`}
+                className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600" : "text-gray-600"}`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="text-xs">{label}</span>

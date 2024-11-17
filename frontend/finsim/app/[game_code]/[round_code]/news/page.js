@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,10 +10,19 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ChevronDown } from "lucide-react"
+import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ChevronDown, Info } from "lucide-react"
+import { Tooltip } from "@/components/ui/tooltip"
 
-export default function News() {
+export default async function Page({ params }) {
+  const { game_code, round_code } = await params
+  return <News game_code={game_code} round_code={round_code} />
+}
+
+function News({ game_code, round_code }) {
+  const router = useRouter()
   const [time, setTime] = useState(90)
+  console.log('game_code:', game_code);
+  console.log('round_code:', round_code);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -72,6 +82,9 @@ export default function News() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Tooltip content={`Game Code: ${game_code} | Round Code: ${round_code}`}>
+              <Info className="h-5 w-5 text-gray-600" />
+            </Tooltip>
             <span className="rounded-lg bg-gray-100 px-3 py-2 font-mono text-lg">{formatTime()}</span>
             <Button className="bg-green-600 hover:bg-green-700">Submit</Button>
           </div>
@@ -91,7 +104,7 @@ export default function News() {
                   </div>
                 ))}
               </div>
-            </CardContent>
+              </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
@@ -134,18 +147,16 @@ export default function News() {
       <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
         <div className="container mx-auto flex justify-around p-2">
           {[
-            { icon: Home, label: "Portfolio", link: "/portfolio" },
-            { icon: ChartIcon, label: "Trade", link: "/trade" },
-            { icon: Newspaper, label: "News", link: "/news", selected: true },
-            { icon: Trophy, label: "Leaderboard", link: "/leaderboard" },
-            { icon: Settings, label: "Settings", link: "/settings" },
+            { icon: Home, label: "Portfolio", link: `/${game_code}/${round_code}/portfolio`, selected: false },
+            { icon: ChartIcon, label: "Trade", link: `/${game_code}/${round_code}/trade`, selected: false },
+            { icon: Newspaper, label: "News", link: `/${game_code}/${round_code}/news`, selected: true },
+            { icon: Trophy, label: "Leaderboard", link: `/${game_code}/${round_code}/leaderboard`, selected: false },
+            { icon: Settings, label: "Settings", link: `/${game_code}/${round_code}/settings`, selected: false },
           ].map(({ icon: Icon, label, link, selected }) => (
             <a
               key={label}
               href={link}
-              className={`flex flex-col items-center p-2 hover:text-primary ${
-                selected ? "text-blue-600" : "text-gray-600"
-              }`}
+              className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600" : "text-gray-600"}`}
             >
               <Icon className="h-6 w-6" />
               <span className="text-xs">{label}</span>

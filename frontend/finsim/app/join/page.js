@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +13,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export default function Join() {
   const [gameCode, setGameCode] = useState("")
   const router = useRouter()
+  const { isAuthenticated } = useAuth()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authenticated = await isAuthenticated()
+      if (!authenticated) {
+        router.push('/')
+      }
+    }
+    checkAuth()
+  }, [router, isAuthenticated])
 
   const handleSubmit = (e) => {
     e.preventDefault()

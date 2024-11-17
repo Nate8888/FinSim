@@ -2,10 +2,39 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { TrendingUp } from "lucide-react"
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
 
 export default function Action() {
+  const { user, signOut, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authenticated = await isAuthenticated();
+      if (!authenticated) {
+        router.push('/');
+      }
+    };
+    checkAuth();
+  }, [router, isAuthenticated]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white flex flex-col items-center justify-center p-4">
+      {user && (
+        <div className="absolute top-4 right-4 text-sm text-muted-foreground">
+          Welcome, {user.displayName || user.email.split('@')[0]}
+          <button onClick={handleSignOut} className="ml-4 text-red-500">
+            Sign Out
+          </button>
+        </div>
+      )}
       <div className="flex flex-col items-center space-y-12">
         <div className="flex flex-col items-center space-y-2 animate-float">
           <div className="rounded-full bg-black p-4">

@@ -8,28 +8,56 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useLoading } from '@/contexts/loading-context'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerificationSent, setIsVerificationSent] = useState(false);
   const { setLoading } = useLoading()
+  const { registerWithEmail, signInWithGoogle, sendVerificationEmail, verifyCode } = useAuth()
+  const router = useRouter()
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleSendVerification = async (e) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      setError('Password should be at least 6 characters');
+      return;
+    }
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      return
+      setError('Passwords do not match');
+      return;
     }
-    if (!password || !confirmPassword) {
-      setError('Password fields cannot be empty')
-      return
+    setLoading(true);
+    try {
+      await sendVerificationEmail(email);
+      setIsVerificationSent(true);
+      // Lock the email and password fields
+      setEmail(email); // Keep the email value as a string
+      setPassword(password); // Keep the password value as a string
+      setConfirmPassword(confirmPassword); // Keep the confirmPassword value as a string
+    } catch (error) {
+      setError('Failed to send verification email: ' + error.message);
     }
-    // Proceed with form submission
-    setError('')
-    console.log('Form submitted')
-  }
+    setLoading(false);
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await verifyCode(email, verificationCode);
+      await registerWithEmail(email, password);
+      router.push('/'); // Redirect to sign-in page
+    } catch (error) {
+      setError('Verification error: ' + error.message);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white">
@@ -42,7 +70,7 @@ export default function Signup() {
           <p className="text-sm text-muted-foreground">Create Your Account</p>
         </div>
         <div className="mt-8 space-y-6">
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={isVerificationSent ? handleVerifyCode : handleSendVerification}>
             <div className="space-y-2">
               <Label htmlFor="email">EMAIL</Label>
               <Input
@@ -53,6 +81,7 @@ export default function Signup() {
                 className="shadow-md"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isVerificationSent}
               />
             </div>
             <div className="space-y-2">
@@ -65,6 +94,7 @@ export default function Signup() {
                 className="shadow-md"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isVerificationSent}
               />
             </div>
             <div className="space-y-2">
@@ -77,8 +107,23 @@ export default function Signup() {
                 className="shadow-md"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isVerificationSent}
               />
             </div>
+            {isVerificationSent && (
+              <div className="space-y-2">
+                <Label htmlFor="verificationCode">VERIFICATION CODE</Label>
+                <Input
+                  id="verificationCode"
+                  placeholder="verification code"
+                  required
+                  type="text"
+                  className="shadow-md"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                />
+              </div>
+            )}
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <div className="flex items-center space-x-2">
               <Checkbox id="terms" required />
@@ -87,7 +132,7 @@ export default function Signup() {
               </Label>
             </div>
             <Button className="w-full bg-yellow-400 font-medium hover:bg-yellow-500" type="submit">
-              Register
+              {isVerificationSent ? 'Verify Code' : 'Send Verification Code'}
             </Button>
           </form>
           <div className="relative">
@@ -98,7 +143,19 @@ export default function Signup() {
               <span className="bg-background px-2 text-muted-foreground">Or</span>
             </div>
           </div>
-          <Button className="w-full bg-black text-white hover:bg-gray-800" variant="outline">
+          <Button
+            className="w-full bg-black text-white hover:bg-gray-800"
+            variant="outline"
+            onClick={async () => {
+              setLoading(true)
+              try {
+                await signInWithGoogle()
+              } catch (error) {
+                setError('Google sign-in error: ' + error.message)
+              }
+              setLoading(false)
+            }}
+          >
             Sign in with Google
           </Button>
           <div className="text-center text-sm">

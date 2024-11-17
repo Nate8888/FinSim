@@ -1,20 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/contexts/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function Signin() {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const { signInWithGoogle, signInWithEmail, user, getCurrentUser } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    getCurrentUser().then((user) => {
+      if (user) {
+        router.push('/action')
+      }
+    })
+  }, [getCurrentUser, router])
 
   async function onSubmit(e) {
     e.preventDefault()
     setIsLoading(true)
-    // TODO: Sign-in logic here
-    setTimeout(() => setIsLoading(false), 1000)
+    const email = e.target.email.value
+    const password = e.target.password.value
+    try {
+      await signInWithEmail(email, password)
+      router.push('/action') // Redirect to /action page
+    } catch (error) {
+      setError(error.message)
+      console.error("Sign-in error:", error)
+    }
+    setIsLoading(false)
   }
 
   return (
@@ -62,6 +83,7 @@ export default function Signin() {
               className="shadow-md"
             />
           </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
           <Button className="w-full bg-yellow-400 font-medium hover:bg-yellow-500 text-black" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
@@ -79,8 +101,14 @@ export default function Signin() {
           type="button"
           className="mt-6 w-full bg-black text-white hover:bg-gray-800"
           disabled={isLoading}
-          onClick={() => {
-            // TODO: Google sign-in logic here
+          onClick={async () => {
+            setIsLoading(true)
+            try {
+              await signInWithGoogle()
+            } catch (error) {
+              console.error("Google sign-in error:", error)
+            }
+            setIsLoading(false)
           }}
         >
           Sign in with Google

@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy } from "lucide-react"
 import { ErrorBoundary } from 'react-error-boundary'
 import Chart from 'chart.js/auto'
+import { Tooltip } from "@/components/ui/tooltip"
+import { Info } from "lucide-react"
 
 function ErrorFallback({error}) {
   return (
@@ -31,7 +34,16 @@ const stocks = [
   { id: 3, name: 'Amazon', holdings: '$250,000', shares: '500', returnPct: '3.00%' },
 ]
 
-export default function Portfolio() {
+export default async function Page({ params }) {
+  const { game_code, round_code } = await params
+  return <Portfolio game_code={game_code} round_code={round_code} />
+}
+
+function Portfolio({ game_code, round_code }) {
+  const router = useRouter()
+  // const searchParams = useSearchParams()
+  // const game_code = searchParams.get('game_code')
+  // const round_code = searchParams.get('round_code')
   const [time, setTime] = useState(90)
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
@@ -115,6 +127,9 @@ export default function Portfolio() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Tooltip content={`Game Code: ${game_code} | Round Code: ${round_code}`}>
+                <Info className="h-5 w-5 text-gray-600" />
+              </Tooltip>
               <span className="rounded-lg bg-gray-100 px-3 py-2 font-mono text-lg">{formatTime()}</span>
               <Button className="bg-green-600 hover:bg-green-700">Submit</Button>
             </div>
@@ -172,16 +187,16 @@ export default function Portfolio() {
         <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
           <div className="container mx-auto flex justify-around p-2">
             {[
-              { icon: Home, label: "Portfolio", link: "/portfolio", selected: true },
-              { icon: ChartIcon, label: "Trade", link: "/trade", selected: false },
-              { icon: Newspaper, label: "News", link: "/news", selected: false },
-              { icon: Trophy, label: "Leaderboard", link: "/leaderboard", selected: false },
-              { icon: Settings, label: "Settings", link: "/settings", selected: false },
+              { icon: Home, label: "Portfolio", link: `/${game_code}/${round_code}/portfolio`, selected: true },
+              { icon: ChartIcon, label: "Trade", link: `/${game_code}/${round_code}/trade`, selected: false },
+              { icon: Newspaper, label: "News", link: `/${game_code}/${round_code}/news`, selected: false },
+              { icon: Trophy, label: "Leaderboard", link: `/${game_code}/${round_code}/leaderboard`, selected: false },
+              { icon: Settings, label: "Settings", link: `/${game_code}/${round_code}/settings`, selected: false },
             ].map(({ icon: Icon, label, link, selected }) => (
               <a
                 key={label}
                 href={link}
-                className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600 !important" : "text-gray-600"}`}
+                className={`flex flex-col items-center p-2 hover:text-primary ${selected ? "text-blue-600" : "text-gray-600"}`}
               >
                 <Icon className="h-6 w-6" />
                 <span className="text-xs">{label}</span>
