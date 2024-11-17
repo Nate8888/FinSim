@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import { useState, useEffect } from "react"
 
-export default function Component() {
+export default function Create() {
     const [gameCode] = useState('XQWSA')
     const [copied, setCopied] = useState(false)
     const [players, setPlayers] = useState([])

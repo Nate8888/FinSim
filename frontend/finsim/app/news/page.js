@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ChevronDown } from "lucide-react"
 
-export default function Component() {
+export default function News() {
   const [time, setTime] = useState(90)
 
   useEffect(() => {

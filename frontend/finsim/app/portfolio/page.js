@@ -31,7 +31,7 @@ const stocks = [
   { id: 3, name: 'Amazon', holdings: '$250,000', shares: '500', returnPct: '3.00%' },
 ]
 
-export default function Component() {
+export default function Portfolio() {
   const [time, setTime] = useState(90)
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
