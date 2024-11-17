@@ -33,7 +33,7 @@ const stocks = [
   { id: 3, name: 'Amazon', holdings: '250,000', shares: '500', returnPct: '3.00' },
 ]
 
-export default function Component() {
+export default function Trading() {
   const [time, setTime] = useState(90)
   const [selectedStock, setSelectedStock] = useState(null)
   const [tradeAmount, setTradeAmount] = useState(0)
