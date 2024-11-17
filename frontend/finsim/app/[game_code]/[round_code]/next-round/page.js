@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { Home, BarChartIcon as ChartIcon, Newspaper, Settings, Trophy, BookOpen, ArrowLeft, Info } from 'lucide-react'
 import { Loader2, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip } from "@/components/ui/tooltip"
-import { Info } from "lucide-react"
 
 export default async function Page({ params }) {
   const { game_code, round_code } = await params
@@ -24,7 +24,7 @@ function RoundLoadingScreen({
   previousRoundPerformance = 5.52,
   upcomingEvent = "Global economic summit",
   stocks = [
-    { symbol: 'AAK', change: 5.52, isOwned: true },
+    { symbol: 'AAK', change: -5.52, isOwned: true },
     { symbol: 'BBL', change: 5.52, isOwned: true },
     { symbol: 'CCM', change: 5.52, isOwned: true },
     { symbol: 'DDP', change: 5.52, isOwned: true },
@@ -132,7 +132,7 @@ function RoundLoadingScreen({
           </CardContent>
         </Card>
         {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
+        {/* <div className="fixed bottom-0 left-0 right-0 border-t bg-background">
           <div className="container mx-auto flex justify-around p-2">
             {[
               { icon: Home, label: "Portfolio", link: `/${game_code}/${round_code}/portfolio`, selected: false },
@@ -151,7 +151,7 @@ function RoundLoadingScreen({
               </a>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
   )
 }
