@@ -1,7 +1,7 @@
 "use client";
 // AuthContext.js
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, getCurrentUser, createUserWithEmailAndPassword, signOutUser } from "../firebaseClient";
+import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, getCurrentUser, createUserWithEmailAndPassword, signOutUser, isAuthenticated } from "../firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
 import { sendEmailVerification, verifyEmailVerificationCode } from "../emailVerificationService";
 
@@ -76,7 +76,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, signInWithGoogle, signInWithEmail, registerWithEmail, getCurrentUser, signOut, sendVerificationEmail, verifyCode }}>
+    <AuthContext.Provider value={{ 
+      user, signInWithGoogle, signInWithEmail, registerWithEmail, 
+      getCurrentUser, signOut, sendVerificationEmail, verifyCode, isAuthenticated 
+    }}>
       {children}
     </AuthContext.Provider>
   );

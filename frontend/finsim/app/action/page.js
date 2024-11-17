@@ -4,10 +4,21 @@ import { Button } from "@/components/ui/button"
 import { TrendingUp } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
 
 export default function Action() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAuthenticated } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authenticated = await isAuthenticated();
+      if (!authenticated) {
+        router.push('/');
+      }
+    };
+    checkAuth();
+  }, [router, isAuthenticated]);
 
   const handleSignOut = async () => {
     await signOut();
