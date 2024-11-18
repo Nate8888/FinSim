@@ -52,13 +52,16 @@ export default function Create() {
         }
     };
 
-    useEffect(() => {
-        let interval;
-        if (roomCreated) {
-            interval = setInterval(() => fetchRoomDetails(gameCode), 7000);
+    const refreshRoomDetails = async () => {
+        setLoading(true);
+        try {
+            await fetchRoomDetails(gameCode);
+        } catch (error) {
+            console.error('Error refreshing room details:', error);
+        } finally {
+            setLoading(false);
         }
-        return () => clearInterval(interval);
-    }, [roomCreated, gameCode]);
+    };
 
     const copyToClipboard = async () => {
         try {
@@ -97,6 +100,23 @@ export default function Create() {
             fetchRoomDetails(code); // Fetch initial room details
         } catch (error) {
             console.error('Error creating room:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const startGame = async () => {
+        setLoading(true);
+        try {
+            const idToken = await getIdToken();
+            const response = await axios.post('http://localhost:5000/start_game', {
+                gameCode,
+                idToken
+            });
+            console.log('Game started:', response.data);
+            // @TODO Redirect to game page or handle game start logic here
+        } catch (error) {
+            console.error('Error starting game:', error);
         } finally {
             setLoading(false);
         }
@@ -207,12 +227,29 @@ export default function Create() {
 
                     {roomCreated && (
                         <div className="rounded-lg bg-yellow-100 p-4 shadow-inner">
-                            <h2 className="font-medium text-yellow-800">Players in Waiting Room</h2>
+                            <div className="flex items-center justify-between">
+                                <h2 className="font-medium text-yellow-800">Players in Waiting Room</h2>
+                                <Button
+                                    variant="outline"
+                                    className="border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                    onClick={refreshRoomDetails}
+                                >
+                                    Refresh
+                                </Button>
+                            </div>
                             <ul className="mt-4 grid grid-cols-2 gap-2">
                                 {players.map((name, index) => (
                                     <li key={index} className="text-sm text-yellow-700">{name}</li>
                                 ))}
                             </ul>
+                            {players.length >= 2 && (
+                                <Button
+                                    className="mt-4 w-full bg-blue-500 text-white hover:bg-blue-600"
+                                    onClick={startGame}
+                                >
+                                    Start Game Now
+                                </Button>
+                            )}
                         </div>
                     )}
                 </main>

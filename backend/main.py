@@ -63,7 +63,8 @@ def create_room():
         'difficulty': difficulty,
         'players': [display_name],
         'authorizedPlayers': [uid],
-        'createdBy': uid
+        'createdBy': uid,
+        'started': False  # Add the started property
     })
 
     return jsonify({'message': 'Room created', 'gameCode': game_code, 'roomId': room_ref.id}), 200
@@ -114,6 +115,35 @@ def join_room():
         })
 
     return jsonify({'message': 'Joined room', 'gameCode': game_code}), 200
+
+@app.route('/start_game', methods=['POST'])
+@cross_origin()
+def start_game():
+    data = request.get_json()
+    game_code = data.get('gameCode')
+    id_token = data.get('idToken')
+
+    if not game_code:
+        return jsonify({'error': 'Game code is required'}), 400
+
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+    except Exception as e:
+        return jsonify({'error': 'Invalid ID token'}), 401
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    if uid != room_data['createdBy']:
+        return jsonify({'error': 'Only the room creator can start the game'}), 403
+
+    room_ref.update({'started': True})
+
+    return jsonify({'message': 'Game started', 'gameCode': game_code}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
