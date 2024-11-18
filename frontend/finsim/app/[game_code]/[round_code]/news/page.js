@@ -56,6 +56,11 @@ function News({ game_code, round_code }) {
           },
           body: JSON.stringify({ gameCode: game_code, roundCode: round_code, idToken }),
         });
+        if (response.status === 404) {
+          alert('The round has already ended.');
+          router.push('/join');
+          return;
+        }
         const data = await response.json();
         setMarketData(data.marketData);
         setPortfolio(data.portfolio);
@@ -63,13 +68,18 @@ function News({ game_code, round_code }) {
         if (error.message === 'No user is currently signed in') {
           try {
             const idToken = await getIdToken(true); // Force refresh the token
-            const response = await fetch('/get_round_market_data', {
+            const response = await fetch('http://localhost:5000/get_round_market_data', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({ gameCode: game_code, roundCode: round_code, idToken }),
             });
+            if (response.status === 404) {
+              alert('The round has already ended.');
+              router.push('/join');
+              return;
+            }
             const data = await response.json();
             setMarketData(data.marketData);
             setPortfolio(data.portfolio);
