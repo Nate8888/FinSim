@@ -73,6 +73,10 @@ export default function Create() {
         }
     }
 
+    const inviteFriends = async () => {
+        await copyToClipboard();
+    };
+
     const createRoom = async () => {
         const generateGameCode = () => {
             const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -219,6 +223,7 @@ export default function Create() {
                             <Button
                                 variant="outline"
                                 className="mt-2 w-full border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                onClick={inviteFriends}
                             >
                                 Invite friends to the game
                             </Button>
@@ -244,7 +249,7 @@ export default function Create() {
                             </ul>
                             {players.length >= 2 && (
                                 <Button
-                                    className="mt-4 w-full bg-blue-500 text-white hover:bg-blue-600"
+                                    className="mt-4 w-full bg-green-500 text-white hover:bg-green-600"
                                     onClick={startGame}
                                 >
                                     Start Game Now
