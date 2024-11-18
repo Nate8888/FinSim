@@ -26,6 +26,7 @@ function News({ game_code, round_code }) {
   const [time, setTime] = useState(90)
   const [marketData, setMarketData] = useState(null)
   const [portfolio, setPortfolio] = useState(null)
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -40,6 +41,9 @@ function News({ game_code, round_code }) {
       if (!authenticated) {
         router.push('/');
       } else {
+        const idToken = await getIdToken();
+        const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
+        setUser(decodedToken);
         if (game_code && round_code) {
           fetchMarketData();
         }
@@ -124,7 +128,7 @@ function News({ game_code, round_code }) {
               <img alt="Profile" src="/globe.svg?height=48&width=48" />
             </Avatar>
             <div>
-              <h1 className="text-xl font-bold">David Curtis</h1>
+              <h1 className="text-xl font-bold">{user ? (user.name || user.email.split('@')[0]) : 'Loading...'}</h1>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
                 <span className="text-sm font-medium text-green-600">+15.55%</span>
