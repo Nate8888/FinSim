@@ -13,13 +13,20 @@ import {
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
+import axios from 'axios';
+import { useLoading } from "@/contexts/loading-context";
 
 export default function Create() {
-    const [gameCode] = useState('XQWSA')
-    const [copied, setCopied] = useState(false)
-    const [players, setPlayers] = useState([])
+    const [gameCode, setGameCode] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [players, setPlayers] = useState([]);
+    const [rounds, setRounds] = useState('8');
+    const [timePerRound, setTimePerRound] = useState('90');
+    const [difficulty, setDifficulty] = useState('easy');
+    const [roomCreated, setRoomCreated] = useState(false);
 
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, getIdToken } = useAuth();
+    const { setLoading } = useLoading();
     const router = useRouter();
 
     useEffect(() => {
@@ -33,10 +40,25 @@ export default function Create() {
     }, [router, isAuthenticated]);
 
     useEffect(() => {
-        // Simulating players joining the waiting room
-        const names = ["Alice", "Bob", "Charlie", "David", "Eva", "Frank", "Grace", "Henry"]
-        setPlayers(names)
-    }, [])
+        setPlayers([]);
+    }, []);
+
+    const fetchRoomDetails = async (gameCode) => {
+        try {
+            const response = await axios.get(`http://localhost:5000/get_room?gameCode=${gameCode}`);
+            setPlayers(response.data.players);
+        } catch (error) {
+            console.error('Error fetching room details:', error);
+        }
+    };
+
+    useEffect(() => {
+        let interval;
+        if (roomCreated) {
+            interval = setInterval(() => fetchRoomDetails(gameCode), 7000);
+        }
+        return () => clearInterval(interval);
+    }, [roomCreated, gameCode]);
 
     const copyToClipboard = async () => {
         try {
@@ -47,6 +69,38 @@ export default function Create() {
             console.error('Failed to copy:', err)
         }
     }
+
+    const createRoom = async () => {
+        const generateGameCode = () => {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 5; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return result;
+        };
+
+        const code = generateGameCode();
+        setGameCode(code);
+        setLoading(true);
+        try {
+            const idToken = await getIdToken();
+            const response = await axios.post('http://localhost:5000/create_room', {
+                gameCode: code,
+                rounds,
+                timePerRound,
+                difficulty,
+                idToken
+            });
+            console.log('Room created:', response.data);
+            setRoomCreated(true);
+            fetchRoomDetails(code); // Fetch initial room details
+        } catch (error) {
+            console.error('Error creating room:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white flex items-center justify-center">
@@ -60,103 +114,107 @@ export default function Create() {
                 </header>
 
                 <main className="space-y-6">
-                    <div className="space-y-2 text-center">
-                        <p className="text-sm text-muted-foreground">Code:</p>
-                        <div className="flex items-center justify-center gap-2">
-                            <span className="text-2xl font-bold tracking-wider text-primary">{gameCode}</span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={copyToClipboard}
-                            >
-                                <Copy className="h-4 w-4" />
-                                <span className="sr-only">Copy game code</span>
+                    {!roomCreated ? (
+                        <div className="space-y-6">
+                            <div className="space-y-1 border-t pt-6">
+                                <h2 className="text-lg font-semibold tracking-tight">GAME SETTINGS</h2>
+                            </div>
+
+                            <div className="grid gap-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium" htmlFor="rounds">
+                                        Rounds
+                                    </label>
+                                    <Select defaultValue="8" onValueChange={setRounds}>
+                                        <SelectTrigger className="w-[180px]" id="rounds">
+                                            <SelectValue placeholder="Select rounds" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[4, 6, 8, 10, 12].map((num) => (
+                                                <SelectItem key={num} value={num.toString()}>
+                                                    {num}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium" htmlFor="time">
+                                        Time Per Round
+                                    </label>
+                                    <Select defaultValue="90" onValueChange={setTimePerRound}>
+                                        <SelectTrigger className="w-[180px]" id="time">
+                                            <SelectValue placeholder="Select time" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {[30, 60, 90, 120, 180].map((num) => (
+                                                <SelectItem key={num} value={num.toString()}>
+                                                    {num}s
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-medium" htmlFor="difficulty">
+                                        Difficulty
+                                    </label>
+                                    <Select defaultValue="easy" onValueChange={setDifficulty}>
+                                        <SelectTrigger className="w-[180px]" id="difficulty">
+                                            <SelectValue placeholder="Select difficulty" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="easy">Easy</SelectItem>
+                                            <SelectItem value="medium">Medium</SelectItem>
+                                            <SelectItem value="hard">Hard</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            <Button className="w-full bg-green-500 text-white hover:bg-green-600" onClick={createRoom}>
+                                Create Room
                             </Button>
                         </div>
-                        {copied && (
-                            <p className="text-sm text-muted-foreground">Copied to clipboard!</p>
-                        )}
-                        <Button
-                            variant="outline"
-                            className="mt-2 w-full border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
-                        >
-                            Invite friends to the game
-                        </Button>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="space-y-1 border-t pt-6">
-                            <h2 className="text-lg font-semibold tracking-tight">GAME SETTINGS</h2>
+                    ) : (
+                        <div className="space-y-2 text-center">
+                            <p className="text-sm text-muted-foreground">Code:</p>
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="text-2xl font-bold tracking-wider text-primary">{gameCode}</span>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={copyToClipboard}
+                                >
+                                    <Copy className="h-4 w-4" />
+                                    <span className="sr-only">Copy game code</span>
+                                </Button>
+                            </div>
+                            {copied && (
+                                <p className="text-sm text-muted-foreground">Copied to clipboard!</p>
+                            )}
+                            <Button
+                                variant="outline"
+                                className="mt-2 w-full border-green-500 text-green-600 hover:bg-green-50 hover:text-green-700"
+                            >
+                                Invite friends to the game
+                            </Button>
                         </div>
+                    )}
 
-                        <div className="grid gap-4">
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium" htmlFor="rounds">
-                                    Rounds
-                                </label>
-                                <Select defaultValue="8">
-                                    <SelectTrigger className="w-[180px]" id="rounds">
-                                        <SelectValue placeholder="Select rounds" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {[4, 6, 8, 10, 12].map((num) => (
-                                            <SelectItem key={num} value={num.toString()}>
-                                                {num}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium" htmlFor="time">
-                                    Time Per Round
-                                </label>
-                                <Select defaultValue="90">
-                                    <SelectTrigger className="w-[180px]" id="time">
-                                        <SelectValue placeholder="Select time" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {[30, 60, 90, 120, 180].map((num) => (
-                                            <SelectItem key={num} value={num.toString()}>
-                                                {num}s
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <label className="text-sm font-medium" htmlFor="difficulty">
-                                    Difficulty
-                                </label>
-                                <Select defaultValue="easy">
-                                    <SelectTrigger className="w-[180px]" id="difficulty">
-                                        <SelectValue placeholder="Select difficulty" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="easy">Easy</SelectItem>
-                                        <SelectItem value="medium">Medium</SelectItem>
-                                        <SelectItem value="hard">Hard</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                    {roomCreated && (
+                        <div className="rounded-lg bg-yellow-100 p-4 shadow-inner">
+                            <h2 className="font-medium text-yellow-800">Players in Waiting Room</h2>
+                            <ul className="mt-4 grid grid-cols-2 gap-2">
+                                {players.map((name, index) => (
+                                    <li key={index} className="text-sm text-yellow-700">{name}</li>
+                                ))}
+                            </ul>
                         </div>
-
-                        <Button className="w-full bg-green-500 text-white hover:bg-green-600">
-                            Start the game
-                        </Button>
-                    </div>
-
-                    <div className="rounded-lg bg-yellow-100 p-4 shadow-inner">
-                        <h2 className="font-medium text-yellow-800">Players in Waiting Room</h2>
-                        <ul className="mt-4 grid grid-cols-2 gap-2">
-                            {players.map((name, index) => (
-                                <li key={index} className="text-sm text-yellow-700">{name}</li>
-                            ))}
-                        </ul>
-                    </div>
+                    )}
                 </main>
             </div>
         </div>

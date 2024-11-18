@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export default function Join() {
   const [gameCode, setGameCode] = useState("")
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, getIdToken } = useAuth()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -25,13 +25,27 @@ export default function Join() {
     checkAuth()
   }, [router, isAuthenticated])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (gameCode.length === 5) {
-      // TODO: Implement actual game joining logic
-      console.log("Joining game with code:", gameCode)
-      // For now, we'll just redirect to a hypothetical game page
-      router.push(`/game/${gameCode}`)
+      try {
+        const idToken = await getIdToken()
+        const response = await fetch('http://localhost:5000/join_room', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ gameCode, idToken })
+        })
+        const result = await response.json()
+        if (response.ok) {
+          alert("Successfully joined the game with code: " + gameCode)
+        } else {
+          alert("Failed to join the game: " + result.error)
+        }
+      } catch (error) {
+        alert("Error joining game: " + error.message)
+      }
     }
   }
 
