@@ -358,5 +358,38 @@ def transact():
 
     return jsonify({'message': 'Transaction successful', 'portfolio': portfolio}), 200
 
+@app.route('/get_round_market_data', methods=['POST'])
+@cross_origin()
+def get_round_market_data():
+    data = request.get_json()
+    game_code = data.get('gameCode')
+    round_code = data.get('roundCode')
+    id_token = data.get('idToken')
+
+    if not all([game_code, round_code, id_token]):
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+    except Exception as e:
+        return jsonify({'error': 'Invalid ID token'}), 401
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    market_data = next((round_data for round_data in room_data['market_data'] if round_data['round_id'] == round_code), None)
+    if not market_data:
+        return jsonify({'error': 'Round not found'}), 404
+
+    portfolio = room_data['portfolios'].get(uid)
+    if not portfolio:
+        return jsonify({'error': 'Portfolio not found'}), 404
+
+    return jsonify({'marketData': market_data, 'portfolio': portfolio}), 200
+
 if __name__ == '__main__':
     app.run(debug=True)

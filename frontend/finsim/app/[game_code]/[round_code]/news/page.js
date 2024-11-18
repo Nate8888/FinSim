@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -12,17 +12,20 @@ import {
 } from "@/components/ui/collapsible"
 import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ChevronDown, Info } from "lucide-react"
 import { Tooltip } from "@/components/ui/tooltip"
+import { useAuth } from "@/contexts/AuthContext"
 
-export default async function Page({ params }) {
-  const { game_code, round_code } = await params
+export default function Page({ params }) {
+  const actualParams = use(params)
+  const { game_code, round_code } = actualParams
   return <News game_code={game_code} round_code={round_code} />
 }
 
 function News({ game_code, round_code }) {
   const router = useRouter()
+  const { isAuthenticated, getIdToken } = useAuth();
   const [time, setTime] = useState(90)
-  console.log('game_code:', game_code);
-  console.log('round_code:', round_code);
+  const [marketData, setMarketData] = useState(null)
+  const [portfolio, setPortfolio] = useState(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -31,38 +34,75 @@ function News({ game_code, round_code }) {
     return () => clearInterval(timer)
   }, [])
 
+  useEffect(() => {
+    const checkAuthAndFetchData = async () => {
+      const authenticated = await isAuthenticated();
+      if (!authenticated) {
+        router.push('/');
+      } else {
+        if (game_code && round_code) {
+          fetchMarketData();
+        }
+      }
+    };
+
+    const fetchMarketData = async () => {
+      try {
+        const idToken = await getIdToken(); // Use the getIdToken function from useAuth
+        const response = await fetch('http://localhost:5000/get_round_market_data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ gameCode: game_code, roundCode: round_code, idToken }),
+        });
+        const data = await response.json();
+        setMarketData(data.marketData);
+        setPortfolio(data.portfolio);
+      } catch (error) {
+        if (error.message === 'No user is currently signed in') {
+          try {
+            const idToken = await getIdToken(true); // Force refresh the token
+            const response = await fetch('/get_round_market_data', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ gameCode: game_code, roundCode: round_code, idToken }),
+            });
+            const data = await response.json();
+            setMarketData(data.marketData);
+            setPortfolio(data.portfolio);
+          } catch (refreshError) {
+            console.error('Error fetching market data after token refresh:', refreshError);
+          }
+        } else {
+          console.error('Error fetching market data:', error);
+        }
+      }
+    };
+
+    checkAuthAndFetchData();
+  }, [game_code, round_code, router, isAuthenticated, getIdToken]);
+
   const formatTime = () => {
     const minutes = Math.floor(time / 60)
     const seconds = time % 60
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
-  const macroIndicators = [
-    { label: "Interest Rate", value: "5.50%", change: "Quarter Change: +0.25%" },
-    { label: "Inflation Rate", value: "3.10%", change: "Quarter Change: -0.15%" },
-    { label: "GDP Growth", value: "2.40%", change: "Quarter Change: +0.30%" },
-  ]
+  const macroIndicators = marketData ? [
+    { label: "Interest Rate", value: `${marketData.interest_rate}%`, change: "Quarter Change: +0.25%" },
+    { label: "Inflation Rate", value: `${marketData.inflation_rate}%`, change: "Quarter Change: -0.15%" },
+    { label: "GDP Growth", value: `${marketData.gdp_growth_rate}%`, change: "Quarter Change: +0.30%" },
+  ] : [];
 
-  const globalNews = [
-    "Global trade tensions escalate as new tariffs announced",
-    "Climate summit concludes with ambitious carbon reduction goals",
-    "Tech industry faces increased scrutiny over data privacy concerns"
-  ]
+  const globalNews = marketData ? marketData.global_news : [];
 
-  const companyNews = [
-    {
-      headline: "Apple reports Sales vs Expected Sales: USD$120.1B vs USD$118.2B",
-      content: "Apple Inc. has exceeded market expectations in its latest quarterly report. The tech giant reported sales of USD$120.1 billion, surpassing the expected USD$118.2 billion. This performance was driven by strong iPhone sales and growth in services revenue. However, there are concerns about supply chain constraints affecting future production."
-    },
-    {
-      headline: "Google's AI breakthrough could revolutionize search technology",
-      content: "Google has announced a major breakthrough in AI language models, which could significantly enhance its search capabilities. The new technology demonstrates improved understanding of context and nuance in queries, potentially leading to more accurate and relevant search results. This development could have far-reaching implications for the tech industry and how we interact with information online."
-    },
-    {
-      headline: "Microsoft's cloud division shows strong growth, Azure revenue up 30% YoY",
-      content: "Microsoft's cloud computing division has reported impressive growth, with Azure revenue increasing by 30% year-over-year. This performance has exceeded market expectations and solidifies Microsoft's position as a leader in the cloud services market. The company attributes this success to increased adoption of its AI and machine learning services by enterprise customers."
-    }
-  ]
+  const companyNews = marketData ? marketData.stocks.map(stock => ({
+    headline: `${stock.ticker} reports price: USD$${stock.price}`,
+    content: stock.news.join(' ')
+  })) : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white pb-16">
@@ -76,7 +116,7 @@ function News({ game_code, round_code }) {
             <div>
               <h1 className="text-xl font-bold">David Curtis</h1>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">$1,555,432.50</span>
+                <span className="text-lg font-semibold">${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
                 <span className="text-sm font-medium text-green-600">+15.55%</span>
               </div>
             </div>
