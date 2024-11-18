@@ -131,7 +131,7 @@ function News({ game_code, round_code }) {
               <h1 className="text-xl font-bold">{user ? (user.name || user.email.split('@')[0]) : 'Loading...'}</h1>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-semibold">${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
-                <span className="text-sm font-medium text-green-600">+15.55%</span>
+                <span className="text-sm font-medium text-green-600">+10.55%</span>
               </div>
             </div>
           </div>
