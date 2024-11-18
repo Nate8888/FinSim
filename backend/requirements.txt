@@ -3,3 +3,4 @@ flask-cors==3.0.10
 google-cloud-firestore
 google-auth
 firebase-admin
+yfinance

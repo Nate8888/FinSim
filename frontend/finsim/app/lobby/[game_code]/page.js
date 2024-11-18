@@ -42,6 +42,21 @@ export default function Lobby() {
     fetchRoomDetails()
   }, [gameCode, getIdToken, setLoading, user])
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/check_game_status?gameCode=${gameCode}`);
+        if (response.data.started) {
+          router.push(`/${response.data.gameCode}/${response.data.roundCode}/news`);
+        }
+      } catch (error) {
+        console.error('Error checking game status:', error);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [gameCode, router]);
+
   const refreshRoomDetails = async () => {
     setLoading(true)
     try {

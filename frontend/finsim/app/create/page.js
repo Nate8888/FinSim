@@ -118,7 +118,17 @@ export default function Create() {
                 idToken
             });
             console.log('Game started:', response.data);
-            // @TODO Redirect to game page or handle game start logic here
+            // Wait a second and check game status
+            setTimeout(async () => {
+                try {
+                    const statusResponse = await axios.get(`http://localhost:5000/check_game_status?gameCode=${gameCode}`);
+                    if (statusResponse.data.started) {
+                        router.push(`/${statusResponse.data.gameCode}/${statusResponse.data.roundCode}/news`);
+                    }
+                } catch (error) {
+                    console.error('Error checking game status:', error);
+                }
+            }, 1000);
         } catch (error) {
             console.error('Error starting game:', error);
         } finally {
