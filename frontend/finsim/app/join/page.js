@@ -40,6 +40,7 @@ export default function Join() {
         const result = await response.json()
         if (response.ok) {
           alert("Successfully joined the game with code: " + gameCode)
+          router.push(`/lobby/${gameCode}`)
         } else {
           alert("Failed to join the game: " + result.error)
         }
