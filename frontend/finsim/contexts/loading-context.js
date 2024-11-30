@@ -6,6 +6,7 @@ import GlobalLoading from '@/components/ui/loading'
 const LoadingContext = createContext({
   isLoading: false,
   setLoading: () => {},
+  isLoading: false,
 })
 
 export const useLoading = () => useContext(LoadingContext)

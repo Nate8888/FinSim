@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
+import { useLoading } from "@/contexts/loading-context"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,7 @@ export default function Join() {
   const [gameCode, setGameCode] = useState("")
   const router = useRouter()
   const { isAuthenticated, getIdToken } = useAuth()
+  const { setLoading } = useLoading()
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -28,6 +30,7 @@ export default function Join() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (gameCode.length === 5) {
+      setLoading(true)
       try {
         const idToken = await getIdToken()
         const response = await fetch('http://localhost:5000/join_room', {
@@ -46,6 +49,8 @@ export default function Join() {
         }
       } catch (error) {
         alert("Error joining game: " + error.message)
+      } finally {
+        setLoading(false)
       }
     }
   }
