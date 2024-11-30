@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,8 @@ import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ArrowLeft, I
 import { Tooltip } from "@/components/ui/tooltip"
 import { ErrorBoundary } from 'react-error-boundary'
 import Chart from 'chart.js/auto'
+import { useAuth } from "@/contexts/AuthContext"
+import { useLoading } from '@/contexts/loading-context'
 
 function ErrorFallback({error}) {
   return (
@@ -29,14 +31,9 @@ const data = [
   { round: 5, balance: 1550000 },
 ]
 
-const stocks = [
-  { id: 1, name: 'Apple', holdings: '150,000', shares: '1,000', returnPct: '5.50' },
-  { id: 2, name: 'Google', holdings: '200,000', shares: '800', returnPct: '4.00' },
-  { id: 3, name: 'Amazon', holdings: '250,000', shares: '500', returnPct: '3.00' },
-]
-
-export default async function Page({ params }) {
-  const { game_code, round_code } = await params
+export default function Page({ params }) {
+  const actualParams = use(params)
+  const { game_code, round_code } = actualParams
   return <Trading game_code={game_code} round_code={round_code} />
 }
 
@@ -50,6 +47,11 @@ function Trading({ game_code, round_code }) {
   const [tradeAmount, setTradeAmount] = useState(0)
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
+  const { isAuthenticated, getIdToken } = useAuth();
+  const { isLoading, setLoading } = useLoading()
+  const [user, setUser] = useState(null);
+  const [portfolio, setPortfolio] = useState(null);
+  const [stocks, setStocks] = useState([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -105,6 +107,63 @@ function Trading({ game_code, round_code }) {
     }
   }, [])
 
+  useEffect(() => {
+    const checkAuthAndFetchData = async () => {
+      setLoading(true)
+      const authenticated = await isAuthenticated();
+      if (!authenticated) {
+        router.push('/');
+      } else {
+        const idToken = await getIdToken();
+        const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
+        setUser(decodedToken);
+        if (game_code && round_code) {
+          await fetchMarketData();
+        }
+      }
+      setLoading(false)
+    };
+
+    const fetchMarketData = async () => {
+      try {
+        const idToken = await getIdToken();
+        const response = await fetch('http://localhost:5000/get_round_market_data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ gameCode: game_code, roundCode: round_code, idToken }),
+        });
+        if (response.status === 404) {
+          alert('The round has already ended.');
+          router.push('/join');
+          return;
+        }
+        const data = await response.json();
+        setPortfolio(data.portfolio);
+        setStocks(data.marketData.stocks.map(stock => {
+          const positions = data.portfolio.holdings
+            ? data.portfolio.holdings.filter(h => h.ticker === stock.ticker)
+            : [];
+          const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+          const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          return {
+            id: stock.ticker,
+            name: stock.ticker,
+            price: stock.price,
+            positions,
+            totalShares,
+            totalHoldings
+          };
+        }));
+      } catch (error) {
+        console.error('Error fetching market data:', error);
+      }
+    };
+
+    checkAuthAndFetchData();
+  }, [game_code, round_code, router, isAuthenticated, getIdToken, setLoading]);
+
   const formatTime = () => {
     const minutes = Math.floor(time / 60)
     const seconds = time % 60
@@ -117,9 +176,200 @@ function Trading({ game_code, round_code }) {
 
   const handleInputChange = (e) => {
     const value = parseInt(e.target.value, 10)
-    if (!isNaN(value) && value >= 0 && value <= 100000) {
+    if (!isNaN(value) && value >= 0 && value <= maxShares()) {
       setTradeAmount(value)
     }
+  }
+
+  const maxShares = () => {
+    return selectedStock ? Math.floor(portfolio.cash / selectedStock.price) : 0;
+  }
+
+  async function handleBuy() {
+    setLoading(true)
+    const idToken = await getIdToken()
+    const response = await fetch('http://localhost:5000/transact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idToken,
+        ticker: selectedStock.id,
+        operation: 'buy',
+        amount: tradeAmount,
+        gameCode: game_code,
+        roundIndex: 0, // Assuming round_index is 0 for the current round
+        roundCode: round_code,
+      }),
+    })
+  
+    if (response.ok) {
+      const data = await response.json()
+      setPortfolio(data.portfolio)
+      setStocks((prevStocks) =>
+        prevStocks.map((stock) => {
+          const positions = data.portfolio.holdings
+            ? data.portfolio.holdings.filter((h) => h.ticker === stock.id)
+            : [];
+          const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+          const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          return {
+            ...stock,
+            positions,
+            totalShares,
+            totalHoldings
+          };
+        })
+      )
+      setSelectedStock((prevSelectedStock) => {
+        const positions = data.portfolio.holdings
+          ? data.portfolio.holdings.filter((h) => h.ticker === prevSelectedStock.id)
+          : [];
+        const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+        const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+        return {
+          ...prevSelectedStock,
+          positions,
+          totalShares,
+          totalHoldings
+        };
+      })
+      alert('Transaction successful')
+    } else {
+      const errorData = await response.json()
+      alert(`Transaction failed: ${errorData.error}`)
+    }
+    setLoading(false)
+  }
+  
+  async function handleSell() {
+    setLoading(true)
+    const idToken = await getIdToken()
+    const response = await fetch('http://localhost:5000/transact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idToken,
+        ticker: selectedStock.id,
+        operation: 'sell',
+        amount: tradeAmount,
+        gameCode: game_code,
+        roundIndex: 0, // Assuming round_index is 0 for the current round
+        roundCode: round_code,
+      }),
+    })
+  
+    if (response.ok) {
+      const data = await response.json()
+      setPortfolio(data.portfolio)
+      setStocks((prevStocks) =>
+        prevStocks.map((stock) => {
+          const positions = data.portfolio.holdings
+            ? data.portfolio.holdings.filter((h) => h.ticker === stock.id)
+            : [];
+          const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+          const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          return {
+            ...stock,
+            positions,
+            totalShares,
+            totalHoldings
+          };
+        })
+      )
+      setSelectedStock((prevSelectedStock) => {
+        const positions = data.portfolio.holdings
+          ? data.portfolio.holdings.filter((h) => h.ticker === prevSelectedStock.id)
+          : [];
+        const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+        const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+        return {
+          ...prevSelectedStock,
+          positions,
+          totalShares,
+          totalHoldings
+        };
+      })
+      alert('Transaction successful')
+    } else {
+      const errorData = await response.json()
+      alert(`Transaction failed: ${errorData.error}`)
+    }
+    setLoading(false)
+  }
+  
+
+  const calculateTotalAssets = () => {
+    return stocks.reduce((total, stock) => {
+      const positions = stock.positions;
+      const stockPrice = stock.price;
+      const totalHoldings = positions.reduce((sum, pos) => {
+        if (pos.shares < 0) {
+          return sum + (pos.price - stockPrice) * Math.abs(pos.shares) + pos.price * Math.abs(pos.shares);
+        } else {
+          return sum + stockPrice * pos.shares;
+        }
+      }, 0);
+      return total + totalHoldings;
+    }, 0);
+  };
+
+  async function handleClosePosition(positionId) {
+    setLoading(true);
+    const idToken = await getIdToken();
+    const response = await fetch('http://localhost:5000/close_position', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idToken,
+        positionId,
+        gameCode: game_code,
+        roundCode: round_code,
+      }),
+    });
+  
+    if (response.ok) {
+      const data = await response.json();
+      setPortfolio(data.portfolio);
+      setStocks((prevStocks) =>
+        prevStocks.map((stock) => {
+          const positions = data.portfolio.holdings
+            ? data.portfolio.holdings.filter((h) => h.ticker === stock.id)
+            : [];
+          const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+          const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          return {
+            ...stock,
+            positions,
+            totalShares,
+            totalHoldings,
+          };
+        })
+      );
+      setSelectedStock((prevSelectedStock) => {
+        const positions = data.portfolio.holdings
+          ? data.portfolio.holdings.filter((h) => h.ticker === prevSelectedStock.id)
+          : [];
+        const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+        const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+        return {
+          ...prevSelectedStock,
+          positions,
+          totalShares,
+          totalHoldings,
+        };
+      });
+      alert('Position closed successfully');
+    } else {
+      const errorData = await response.json();
+      alert(`Failed to close position: ${errorData.error}`);
+    }
+    setLoading(false);
   }
 
   return (
@@ -133,10 +383,12 @@ function Trading({ game_code, round_code }) {
                 <img alt="Profile" src="/globe.svg?height=48&width=48" />
               </Avatar>
               <div>
-                <h1 className="text-xl font-bold">David Curtis</h1>
+                <h1 className="text-xl font-bold">{user ? (user.name || user.email.split('@')[0]) : 'Loading...'}</h1>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">$1,555,432.50</span>
-                  <span className="text-sm font-medium text-green-600">+15.55%</span>
+                  <span className="text-lg font-semibold">Cash: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">Total Portfolio: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
                 </div>
               </div>
             </div>
@@ -163,11 +415,11 @@ function Trading({ game_code, round_code }) {
             <div className="flex justify-between mb-4">
               <div>
                 <div className="text-sm text-gray-600">Cash:</div>
-                <div className="text-lg font-semibold">$115,000.00</div>
+                <div className="text-lg font-semibold">${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</div>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-600">Assets:</div>
-                <div className="text-lg font-semibold">$1,440,432.50</div>
+                <div className="text-lg font-semibold">${portfolio ? calculateTotalAssets().toFixed(2) : '0.00'}</div>
               </div>
             </div>
             
@@ -197,20 +449,42 @@ function Trading({ game_code, round_code }) {
                           <span className="text-sm text-green-600">+{selectedStock.returnPct}%</span>
                         </div>
                         <div className="mt-1 flex justify-between text-sm text-gray-600">
-                          <span>Holdings: ${selectedStock.holdings.toLocaleString()}</span>
-                          <span>{selectedStock.shares} shares</span>
+                          <span>Holdings: ${selectedStock.totalHoldings.toLocaleString()}</span>
+                          <span>Positions: {selectedStock.positions.length}</span>
                         </div>
                       </div>
                       </CardContent>
                     </Card>
+                    <div className="space-y-4 mt-6">
+                      <h3 className="text-lg font-semibold">Open Positions</h3>
+                      {selectedStock.positions.map((position) => (
+                        <Card key={position.id} className="overflow-hidden bg-white">
+                          <CardContent className="flex items-center gap-4 p-4">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <span>Price Purchased: ${position.price.toFixed(2)}</span>
+                                <span>Shares: {position.shares}</span>
+                                <span>Profit: ${((selectedStock.price - position.price) * position.shares).toFixed(2)}</span>
+                              </div>
+                            </div>
+                            <Button 
+                              className="bg-red-500 hover:bg-red-600"
+                              onClick={() => handleClosePosition(position.id)}
+                            >
+                              Close Position
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                     <div className="space-y-4 mt-6">
                       <label className="block text-sm font-medium text-gray-700">Amount:</label>
                       <div className="flex items-center space-x-4">
                         <Slider
                           value={[tradeAmount]}
                           onValueChange={handleSliderChange}
-                          max={100000}
-                          step={100}
+                          max={maxShares()}
+                          step={1}
                           className="flex-grow"
                         />
                         <Input
@@ -220,11 +494,14 @@ function Trading({ game_code, round_code }) {
                           className="w-24"
                         />
                       </div>
+                      <div className="text-right text-sm text-gray-600">
+                        Total Price: ${(tradeAmount * (selectedStock ? selectedStock.price : 0)).toFixed(2)}
+                      </div>
                       <div className="flex gap-4">
-                        <Button className="flex-1 bg-green-500 hover:bg-green-600">
+                        <Button className="flex-1 bg-green-500 hover:bg-green-600" onClick={handleBuy}>
                           Buy
                         </Button>
-                        <Button className="flex-1 bg-red-500 hover:bg-red-600">
+                        <Button className="flex-1 bg-red-500 hover:bg-red-600" onClick={handleSell}>
                           Sell
                         </Button>
                       </div>
@@ -247,11 +524,10 @@ function Trading({ game_code, round_code }) {
                               Trade
                             </Button>
                           </div>
-                          {/* <div className="mt-1 flex justify-between text-sm text-gray-600">
-                            <span>Holdings: ${stock.holdings.toLocaleString()}</span>
-                            <span>{stock.shares} shares</span>
-                            <span>{stock.returnPct}%</span>
-                          </div> */}
+                          <div className="mt-1 flex justify-between text-sm text-gray-600">
+                            <span>Price: ${stock.price.toFixed(2)}</span>
+                            <span>Positions: {stock.positions.length}</span>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

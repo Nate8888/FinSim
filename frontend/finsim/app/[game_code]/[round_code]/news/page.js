@@ -113,10 +113,12 @@ function News({ game_code, round_code }) {
 
   const globalNews = marketData ? marketData.global_news : [];
 
-  const companyNews = marketData ? marketData.stocks.map(stock => ({
-    headline: `${stock.ticker} reports price: USD$${stock.price}`,
-    content: stock.news.join(' ')
-  })) : [];
+  const companyNews = marketData ? marketData.stocks.flatMap(stock => 
+    stock.news.map(newsItem => ({
+      headline: `${stock.ticker}: ${newsItem}`,
+      content: newsItem
+    }))
+  ) : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white pb-16">
@@ -130,7 +132,10 @@ function News({ game_code, round_code }) {
             <div>
               <h1 className="text-xl font-bold">{user ? (user.name || user.email.split('@')[0]) : 'Loading...'}</h1>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
+                <span className="text-md font-semibold">Cash: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-md font-semibold">Total Portfolio: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
                 <span className="text-sm font-medium text-green-600">+10.55%</span>
               </div>
             </div>
