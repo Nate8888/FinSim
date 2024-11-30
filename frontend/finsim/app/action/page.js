@@ -5,10 +5,12 @@ import { TrendingUp } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from "react";
+import { useLoading } from "@/contexts/loading-context";
 
 export default function Action() {
   const { user, signOut, isAuthenticated } = useAuth();
   const router = useRouter();
+  const { setLoading } = useLoading();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -21,8 +23,13 @@ export default function Action() {
   }, [router, isAuthenticated]);
 
   const handleSignOut = async () => {
-    await signOut();
-    router.push('/');
+    setLoading(true);
+    try {
+      await signOut();
+      router.push('/');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
