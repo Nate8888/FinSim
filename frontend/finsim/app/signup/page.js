@@ -147,13 +147,14 @@ export default function Signup() {
             className="w-full bg-black text-white hover:bg-gray-800"
             variant="outline"
             onClick={async () => {
-              setLoading(true)
+              setLoading(true);
               try {
-                await signInWithGoogle()
+                await signInWithGoogle();
+                router.push('/action'); // Redirect to /action page
               } catch (error) {
-                setError('Google sign-in error: ' + error.message)
+                setError('Google sign-in error: ' + error.message);
               }
-              setLoading(false)
+              setLoading(false);
             }}
           >
             Sign in with Google
