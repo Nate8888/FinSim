@@ -1,7 +1,7 @@
 "use client";
 // AuthContext.js
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, getCurrentUser, createUserWithEmailAndPassword, signOutUser, isAuthenticated, getIdToken } from "../firebaseClient";
+import { auth, googleProvider, signInWithPopup, signInWithEmailAndPassword, getCurrentUser, createUserWithEmailAndPassword, signOutUser, isAuthenticated, getIdToken, signInWithGoogle as signInWithGoogleMethod } from "../firebaseClient";
 import { onAuthStateChanged } from "firebase/auth";
 import { sendEmailVerification, verifyEmailVerificationCode } from "../emailVerificationService";
 
@@ -20,7 +20,8 @@ export const AuthProvider = ({ children }) => {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const user = await signInWithGoogleMethod();
+      setUser(user);
     } catch (error) {
       console.error("Google sign-in error:", error);
     }

@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { useLoading } from '@/contexts/loading-context'
 
 export default function Signin() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const { signInWithGoogle, signInWithEmail, user, getCurrentUser } = useAuth()
   const router = useRouter()
+  const { setLoading } = useLoading()
 
   useEffect(() => {
     getCurrentUser().then((user) => {
@@ -102,13 +104,16 @@ export default function Signin() {
           className="mt-6 w-full bg-black text-white hover:bg-gray-800"
           disabled={isLoading}
           onClick={async () => {
-            setIsLoading(true)
+            setIsLoading(true);
+            setLoading(true);
             try {
-              await signInWithGoogle()
+              await signInWithGoogle();
+              router.push('/action');
             } catch (error) {
-              console.error("Google sign-in error:", error)
+              console.error("Google sign-in error:", error);
             }
-            setIsLoading(false)
+            setIsLoading(false);
+            setLoading(false);
           }}
         >
           Sign in with Google
