@@ -335,8 +335,8 @@ def generate_all_rounds(rounds, time_per_round):
         market_data.append(new_round)
         previous_round = copy.deepcopy(new_round)  # Make a deep copy of the round data
     # Let's dump the round to a file
-    with open('market_data.json', 'w') as f:
-        json.dump(market_data, f)
+    # with open('market_data.json', 'w') as f:
+    #     json.dump(market_data, f)
     return market_data
 
 @app.route('/create_room', methods=['POST'])

@@ -1,6 +1,8 @@
 runtime: python39  # Use the appropriate Python version
 env: standard
 
+instance_class: F2  # Increase instance class to handle more memory
+
 handlers:
   - url: /.*
     script: auto
