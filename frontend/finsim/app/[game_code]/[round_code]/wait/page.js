@@ -5,10 +5,19 @@ import { motion } from 'framer-motion'
 import { LineChart } from 'lucide-react'
 import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useRouter } from 'next/navigation'
+import { use } from 'react'
 
-export default function Component({ roundDuration = 30 }) {
+export default function Page({ params }) {
+  const actualParams = use(params)
+  const { game_code, round_code } = actualParams
+  return <WaitComponent game_code={game_code} round_code={round_code} />
+}
+
+function WaitComponent({ game_code, round_code, roundDuration = 120 }) {
   const [progress, setProgress] = useState(0)
   const [timeLeft, setTimeLeft] = useState(roundDuration)
+  const router = useRouter()
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -23,10 +32,32 @@ export default function Component({ roundDuration = 30 }) {
       })
     }, 1000)
 
+    const checkCompletionInterval = setInterval(async () => {
+      const response = await fetch('http://localhost:5000/check_round_completion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameCode: game_code,
+          roundCode: round_code,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.allUsersCompleted) {
+          clearInterval(checkCompletionInterval)
+          router.push(`/${game_code}/${data.newRoundCode}/portfolio`)
+        }
+      }
+    }, 10000) // Check every 5 seconds
+
     return () => {
       clearInterval(timer)
+      clearInterval(checkCompletionInterval)
     }
-  }, [roundDuration])
+  }, [roundDuration, router, game_code, round_code])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white flex items-center justify-center p-4">
