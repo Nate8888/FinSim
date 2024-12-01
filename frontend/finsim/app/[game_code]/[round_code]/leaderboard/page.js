@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tooltip as UITooltip } from "@/components/ui/tooltip"
+import { use } from 'react'
 
 const data = [
     { round: 1, player1: 1000000, player2: 1200000, player3: 800000, player4: 950000, player5: 1100000, player6: 850000, player7: 1050000, player8: 900000 },
@@ -28,8 +29,9 @@ const players = [
     { id: 8, name: "Sophia Martinez", initials: "SM", value: 1100000, change: "+22.22%", color: "#8B0000" },
 ]
 
-export default async function Page({ params }) {
-  const { game_code, round_code } = await params
+export default function Page({ params }) {
+  const actualParams = use(params)
+  const { game_code, round_code } = actualParams
   return <Leaderboard game_code={game_code} round_code={round_code} />
 }
 
@@ -39,6 +41,8 @@ function Leaderboard({ game_code, round_code }) {
     // const game_code = searchParams.get('game_code')
     // const round_code = searchParams.get('round_code')
     const [time, setTime] = useState(90)
+    const [leaderboard, setLeaderboard] = useState([])
+    const [history, setHistory] = useState([])
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -46,6 +50,16 @@ function Leaderboard({ game_code, round_code }) {
         }, 1000)
         return () => clearInterval(timer)
     }, [])
+
+    useEffect(() => {
+        async function fetchLeaderboard() {
+            const response = await fetch(`http://127.0.0.1:5000/leaderboard?gameCode=${game_code}`)
+            const data = await response.json()
+            setLeaderboard(data.leaderboard)
+            setHistory(data.history)
+        }
+        fetchLeaderboard()
+    }, [game_code])
 
     const formatTime = () => {
         const minutes = Math.floor(time / 60)
@@ -70,24 +84,14 @@ function Leaderboard({ game_code, round_code }) {
 
                     {/* Leaderboard List */}
                     <div className="mb-8 space-y-4">
-                        {players.map((player) => (
-                            <Card key={player.id} className="flex items-center gap-4 p-4">
-                                <div className="text-lg font-bold">{player.id}</div>
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full text-white text-lg font-bold" style={{ backgroundColor: player.color }}>
-                                    {player.initials}
-                                </div>
+                        {leaderboard.map((player, index) => (
+                            <Card key={index} className="flex items-center gap-4 p-4">
+                                <div className="text-lg font-bold">{index + 1}</div>
                                 <div className="flex-1">
                                     <div className="font-semibold">{player.name}</div>
                                     <div className="text-sm text-muted-foreground">
                                         ${player.value.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                     </div>
-                                </div>
-                                <div
-                                    className={`text-sm font-medium ${
-                                        player.change.startsWith("+") ? "text-green-600" : "text-red-600"
-                                    }`}
-                                >
-                                    {player.change}
                                 </div>
                             </Card>
                         ))}
@@ -95,10 +99,10 @@ function Leaderboard({ game_code, round_code }) {
 
                     {/* Chart Legend */}
                     <div className="mb-4 flex flex-wrap justify-center gap-2">
-                        {players.map((player) => (
-                            <div key={player.id} className="flex items-center">
-                                <div className="h-6 w-6 mr-1 flex items-center justify-center rounded-full text-white text-xs font-bold" style={{ backgroundColor: player.color }}>
-                                    {player.initials}
+                        {leaderboard.map((player, index) => (
+                            <div key={index} className="flex items-center">
+                                <div className="h-6 w-6 mr-1 flex items-center justify-center rounded-full text-white text-xs font-bold" style={{ backgroundColor: players[index]?.color || "#000" }}>
+                                    {player.name.split(' ').map(n => n[0]).join('')}
                                 </div>
                                 <span className="text-xs font-medium">{player.name.split(' ')[0]}</span>
                             </div>
@@ -108,7 +112,7 @@ function Leaderboard({ game_code, round_code }) {
                     {/* Portfolio Chart */}
                     <div className="mb-20 h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                            <LineChart data={history} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                                 <XAxis dataKey="round" tickLine={false} axisLine={false} />
                                 <YAxis
                                     tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}

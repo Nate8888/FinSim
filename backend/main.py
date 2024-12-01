@@ -763,6 +763,53 @@ def check_round_completion():
     else:
         return jsonify({'allUsersCompleted': False}), 200
 
+@app.route('/leaderboard', methods=['GET'])
+@cross_origin()
+def leaderboard():
+    game_code = request.args.get('gameCode')
+    if not game_code:
+        return jsonify({'error': 'Game code is required'}), 400
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    portfolios = room_data.get('portfolios', {})
+    authorized_players = room_data.get('authorizedPlayers', [])
+    players = room_data.get('players', [])
+
+    leaderboard_data = []
+    history_data = []
+
+    for round_index, round_data in enumerate(room_data['market_data']):
+        round_history = {'round': round_index + 1}
+        for uid, portfolio in portfolios.items():
+            index = authorized_players.index(uid)
+            player_name = players[index]
+            value_history = portfolio.get('value_history', [])
+            if round_index < len(value_history):
+                latest_value = value_history[round_index]
+                leaderboard_data.append({
+                    'name': player_name,
+                    'value': latest_value
+                })
+                round_history[f'player{index + 1}'] = latest_value
+        history_data.append(round_history)
+
+    unique_leaderboard = {}
+    for uid, portfolio in portfolios.items():
+        index = authorized_players.index(uid)
+        player_name = players[index]
+        latest_value = portfolio.get('value_history', [])[-1] if portfolio.get('value_history') else 0
+        unique_leaderboard[player_name] = latest_value
+
+    sorted_leaderboard = sorted(unique_leaderboard.items(), key=lambda x: x[1], reverse=True)
+    leaderboard_data = [{'name': name, 'value': value} for name, value in sorted_leaderboard]
+
+    return jsonify({'leaderboard': leaderboard_data, 'history': history_data}), 200
+
 if __name__ == '__main__':
     # Example usage
     # example = {
