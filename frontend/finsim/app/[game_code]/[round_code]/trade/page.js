@@ -421,7 +421,7 @@ function Trading({ game_code, round_code }) {
                   <span className="text-lg font-semibold">Cash: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">Total Portfolio: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
+                  <span className="text-lg font-semibold">Total Portfolio: ${portfolio ? (portfolio.cash + calculateTotalAssets()).toFixed(2) : '0.00'}</span>
                 </div>
               </div>
             </div>
