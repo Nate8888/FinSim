@@ -23,14 +23,6 @@ function ErrorFallback({error}) {
   )
 }
 
-const data = [
-  { round: 1, balance: 1200000 },
-  { round: 2, balance: 1400000 },
-  { round: 3, balance: 1300000 },
-  { round: 4, balance: 1600000 },
-  { round: 5, balance: 1550000 },
-]
-
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -52,6 +44,7 @@ function Trading({ game_code, round_code }) {
   const [user, setUser] = useState(null);
   const [portfolio, setPortfolio] = useState(null);
   const [stocks, setStocks] = useState([]);
+  const [roundIndex, setRoundIndex] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,7 +54,7 @@ function Trading({ game_code, round_code }) {
   }, [])
 
   useEffect(() => {
-    if (chartRef.current) {
+    if (chartRef.current && portfolio?.value_history) {
       if (chartInstance.current) {
         chartInstance.current.destroy()
       }
@@ -70,10 +63,10 @@ function Trading({ game_code, round_code }) {
       chartInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.map(d => `Round ${d.round}`),
+          labels: portfolio.value_history.map((_, index) => `Round ${index + 1}`),
           datasets: [{
-            label: 'Balance',
-            data: data.map(d => d.balance),
+            label: 'Portfolio Value',
+            data: portfolio.value_history,
             borderColor: 'hsl(var(--primary))',
             tension: 0.1
           }]
@@ -85,14 +78,14 @@ function Trading({ game_code, round_code }) {
             y: {
               beginAtZero: false,
               ticks: {
-                callback: (value) => `$${(value / 1000000).toFixed(1)}M`
+                callback: (value) => `$${(value / 1000).toFixed(1)}K`
               }
             }
           },
           plugins: {
             tooltip: {
               callbacks: {
-                label: (context) => `Balance: $${(context.parsed.y / 1000000).toFixed(2)}M`
+                label: (context) => `Value: $${(context.parsed.y).toFixed(2)}`
               }
             }
           }
@@ -105,7 +98,7 @@ function Trading({ game_code, round_code }) {
         chartInstance.current.destroy()
       }
     }
-  }, [])
+  }, [portfolio?.value_history])
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -141,6 +134,7 @@ function Trading({ game_code, round_code }) {
         }
         const data = await response.json();
         setPortfolio(data.portfolio);
+        setRoundIndex(data.roundIndex);
         setStocks(data.marketData.stocks.map(stock => {
           const positions = data.portfolio.holdings
             ? data.portfolio.holdings.filter(h => h.ticker === stock.ticker)
@@ -199,7 +193,7 @@ function Trading({ game_code, round_code }) {
         operation: 'buy',
         amount: tradeAmount,
         gameCode: game_code,
-        roundIndex: 0, // Assuming round_index is 0 for the current round
+        roundIndex: roundIndex,
         roundCode: round_code,
       }),
     })
@@ -257,7 +251,7 @@ function Trading({ game_code, round_code }) {
         operation: 'sell',
         amount: tradeAmount,
         gameCode: game_code,
-        roundIndex: 0, // Assuming round_index is 0 for the current round
+        roundIndex: roundIndex,
         roundCode: round_code,
       }),
     })
