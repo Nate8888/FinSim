@@ -21,6 +21,26 @@ function ErrorFallback({error}) {
   )
 }
 
+async function checkUserRoundCompletion(game_code, round_code, idToken) {
+  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+      idToken,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return data.userCompleted;
+  }
+  return false;
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -39,6 +59,7 @@ function Portfolio({ game_code, round_code }) {
   const [portfolio, setPortfolio] = useState(null);
   const [stocks, setStocks] = useState([]);
   const [roundIndex, setRoundIndex] = useState(null);
+  const [timer, setTimer] = useState(null);
 
   const COMPANY_NAMES = {
     'AAPL': 'Apple Inc.',
@@ -92,18 +113,20 @@ function Portfolio({ game_code, round_code }) {
       localStorage.setItem('endTime', endTime.getTime());
     }
 
-    const timer = setInterval(() => {
+    const timerInterval = setInterval(() => {
       const currentTime = new Date();
       const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
       setTime(timeDiff);
 
       if (timeDiff <= 0) {
-        clearInterval(timer);
+        clearInterval(timerInterval);
         handleSubmit();  // Call handleSubmit when the round ends
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    setTimer(timerInterval);
+
+    return () => clearInterval(timerInterval);
   }, []);
 
   useEffect(() => {
@@ -161,6 +184,11 @@ function Portfolio({ game_code, round_code }) {
         router.push('/');
       } else {
         const idToken = await getIdToken();
+        const userCompleted = await checkUserRoundCompletion(game_code, round_code, idToken);
+        if (userCompleted) {
+          router.push(`/${game_code}/${round_code}/wait`);
+          return;
+        }
         const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
         setUser(decodedToken);
         if (game_code && round_code) {
@@ -223,6 +251,8 @@ function Portfolio({ game_code, round_code }) {
 
   async function handleSubmit() {
     setLoading(true);
+    clearInterval(timer);
+    localStorage.removeItem('endTime');
     const idToken = await getIdToken();
     const response = await fetch('http://localhost:5000/complete_round', {
       method: 'POST',

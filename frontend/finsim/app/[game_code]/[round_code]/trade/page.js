@@ -23,6 +23,26 @@ function ErrorFallback({error}) {
   )
 }
 
+async function checkUserRoundCompletion(game_code, round_code, idToken) {
+  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+      idToken,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return data.userCompleted;
+  }
+  return false;
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -58,47 +78,18 @@ function Trading({ game_code, round_code }) {
   const [portfolio, setPortfolio] = useState(null);
   const [stocks, setStocks] = useState([]);
   const [roundIndex, setRoundIndex] = useState(null);
+  const [timer, setTimer] = useState(null);
 
   useEffect(() => {
-    const storedEndTime = localStorage.getItem('endTime');
-    let endTime;
-    if (storedEndTime) {
-      endTime = new Date(parseInt(storedEndTime, 10));
-    } else {
-      const storedTimePerRound = localStorage.getItem('timePerRound');
-      const roundDuration = storedTimePerRound ? parseInt(storedTimePerRound, 10) : 90;
-      endTime = new Date(Date.now() + roundDuration * 1000);
-      localStorage.setItem('endTime', endTime.getTime());
-    }
-
-    const timer = setInterval(() => {
-      const currentTime = new Date();
-      const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
-      setTime(timeDiff);
-
-      if (timeDiff <= 0) {
-        clearInterval(timer);
-        handleSubmit();  // Call handleSubmit when the round ends
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    if (chartRef.current && portfolio?.value_history) {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-
-      const ctx = chartRef.current.getContext('2d')
+    if (chartRef.current) {
+      const ctx = chartRef.current.getContext('2d');
       chartInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: portfolio.value_history.map((_, index) => `Round ${index + 1}`),
+          labels: [], // Add your labels here
           datasets: [{
-            label: 'Portfolio Value',
-            data: portfolio.value_history,
+            label: 'Stock Prices',
+            data: [], // Add your data here
             borderColor: 'hsl(var(--primary))',
             tension: 0.1
           }]
@@ -122,15 +113,43 @@ function Trading({ game_code, round_code }) {
             }
           }
         }
-      })
+      });
     }
 
     return () => {
       if (chartInstance.current) {
-        chartInstance.current.destroy()
+        chartInstance.current.destroy();
       }
+    };
+  }, [chartRef]);
+
+  useEffect(() => {
+    const storedEndTime = localStorage.getItem('endTime');
+    let endTime;
+    if (storedEndTime) {
+      endTime = new Date(parseInt(storedEndTime, 10));
+    } else {
+      const storedTimePerRound = localStorage.getItem('timePerRound');
+      const roundDuration = storedTimePerRound ? parseInt(storedTimePerRound, 10) : 90;
+      endTime = new Date(Date.now() + roundDuration * 1000);
+      localStorage.setItem('endTime', endTime.getTime());
     }
-  }, [portfolio?.value_history])
+
+    const timerInterval = setInterval(() => {
+      const currentTime = new Date();
+      const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+      setTime(timeDiff);
+
+      if (timeDiff <= 0) {
+        clearInterval(timerInterval);
+        handleSubmit();  // Call handleSubmit when the round ends
+      }
+    }, 1000);
+
+    setTimer(timerInterval);
+
+    return () => clearInterval(timerInterval);
+  }, []);
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -140,6 +159,11 @@ function Trading({ game_code, round_code }) {
         router.push('/');
       } else {
         const idToken = await getIdToken();
+        const userCompleted = await checkUserRoundCompletion(game_code, round_code, idToken);
+        if (userCompleted) {
+          router.push(`/${game_code}/${round_code}/wait`);
+          return;
+        }
         const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
         setUser(decodedToken);
         if (game_code && round_code) {
@@ -403,6 +427,8 @@ function Trading({ game_code, round_code }) {
 
   async function handleSubmit() {
     setLoading(true);
+    clearInterval(timer);
+    localStorage.removeItem('endTime');
     const idToken = await getIdToken();
     const response = await fetch('http://localhost:5000/complete_round', {
       method: 'POST',

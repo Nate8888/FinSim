@@ -40,8 +40,8 @@ def simulate_stock_price(example):
             "role": "system",
             "content": [
                 {
-                "text": "Simulate stock market prices for a given asset. Consider the current stock price and a list of news articles, then determine the new price based on the expected impact of the news.\n\nUse provided inputs in JSON format and calculate a reasonable new stock price based on the nature of the given news. Each news item may have a positive, negative, or neutral effect on the stock.\n\n# Steps\n\n1. **Process Input**: Receive the input JSON containing the company's current stock price and a list of news items.\n2. **Analyze News Impact**: For each piece of news, determine if its tone is positive, negative, or neutral.\n   - Consider news sentiment, importance, and relevance.\n3. **Adjust Stock Price**: Depending on the combined influence of the news items:\n   - Positive news should boost the price.\n   - Negative news should decrease the price.\n   - Neutral/balanced news should not significantly affect the stock price.\n4. **Reason Calculation**: Provide a reasoning step determining how each news item influences the stock price.\n5. **Output Result**: Output the adjusted stock price as JSON, including a breakdown of how each news item affected the final value.\n\n# Output Format\n\nThe output should be in JSON format with the following structure:\n- `asset`: the name of the asset.\n- `current_price`: the original price provided.\n- `news_effect`: a list detailing each news item's effect.\n- `new_price`: the calculated new stock price.\n\nExample Output:\n```json\n{\n  \"asset\": \"[Company Name]\",\n  \"current_price\": [Current Price],\n  \"news_effect\": [\n    {\n      \"news\": \"[News headline or summary]\",\n      \"sentiment\": \"positive/negative/neutral\",\n      \"impact\": \"[Description of the impact on price]\"\n    },\n    ...\n  ],\n  \"new_price\": [Calculated New Price]\n}\n```\n\n# Example\n\n### Input:\n```json\n{\n  \"asset\": \"TechCo\",\n  \"current_price\": 150.00,\n  \"news\": [\n    \"TechCo reports 20% increase in quarterly revenue.\",\n    \"Lawsuit filed against TechCo over privacy concerns.\",\n    \"TechCo launches new smartphone model.\"\n  ]\n}\n```\n\n### Reasoning:\n- News headline 1: Positive news, will likely boost stock price due to strong earnings.\n- News headline 2: Negative news, expected to partially offset gains due to potential legal costs.\n- News headline 3: New product launch, likely positive, but depends on market response.\n\n### Output:\n```json\n{\n  \"asset\": \"TechCo\",\n  \"current_price\": 150.00,\n  \"news_effect\": [\n    {\n      \"news\": \"TechCo reports 20% increase in quarterly revenue.\",\n      \"sentiment\": \"positive\",\n      \"impact\": \"+5.00\"\n    },\n    {\n      \"news\": \"Lawsuit filed against TechCo over privacy concerns.\",\n      \"sentiment\": \"negative\",\n      \"impact\": \"-2.50\"\n    },\n    {\n      \"news\": \"TechCo launches new smartphone model.\",\n      \"sentiment\": \"positive\",\n      \"impact\": \"+3.00\"\n    }\n  ],\n  \"new_price\": 155.50\n}\n```\n\n# Notes\n\n- With conflicting news, the model should try to balance the impact proportionally.\n- Some news might not have significant impact. In such cases, the impact can be zero.\n- Consider edge cases like highly impactful news or unclear sentiment and provide a conservative change.\n",
-                "type": "text"
+                "type": "text",
+                "text": "Simulate stock market prices for a given asset. Consider the current stock price and a list of news articles, then determine the new price based on the expected impact of the news.\n\nUse provided inputs in JSON format and calculate a reasonable new stock price based on the nature of the given news. Each news item may have a positive, negative, or neutral effect on the stock.\n\n# Steps\n\n1. **Process Input**: Receive the input JSON containing the company's current stock price and a list of news items.\n2. **Analyze News Impact**: For each piece of news, determine if its tone is positive, negative, or neutral.\n3. **Adjust Stock Price**: Depending on the combined influence of the news items:\n   - Positive news should boost the price. Determine a range between 0 - 40% of the current price\n   - Negative news should decrease the price. Determine a range between 0 - 40% of the current price\n   - Neutral/balanced news should not significantly affect the stock price.\n4. **Output Result**: Output the adjusted stock price as JSON, including a breakdown of how each news item affected the final value.\n\n# Output Format\n\nThe output should be in JSON format with the following structure:\n- `asset`: the name of the asset.\n- `current_price`: the original price provided.\n- `new_price`: the calculated new stock price.\n\nExample Output:\n```json\n{\n  \"asset\": \"[Company Name]\",\n  \"current_price\": [Current Price],\n  \"new_price\": [Calculated New Price]\n}\n```\n\n# Example\n\n### Input:\n```json\n{\n  \"asset\": \"TechCo\",\n  \"current_price\": 150.00,\n  \"news\": [\n    \"TechCo reports 20% increase in quarterly revenue.\",\n    \"Lawsuit filed against TechCo over privacy concerns.\",\n    \"TechCo launches new smartphone model.\"\n  ]\n}\n```\n\n### Reasoning:\n- News headline 1: Very positive news, will likely boost stock price due to strong earnings.\n- News headline 2: Negative news, expected to partially offset gains due to potential legal costs.\n- News headline 3: New product launch, likely positive, but depends on market response.\n\n### Output:\n```json\n{\n  \"asset\": \"TechCo\",\n  \"current_price\": 150.00,\n  \"new_price\": 165.50\n}\n```\n\n# Notes\n\n- With conflicting news, the model should try to balance the impact proportionally.\n- Some news might not have significant impact. In such cases, the impact can be zero.\n- Consider edge cases like highly impactful news or unclear sentiment and provide a conservative change.\n- If the news are clearly super impactful feel free to give it a return between -40% to 40%.\n"
                 }
             ]
             },
@@ -49,8 +49,8 @@ def simulate_stock_price(example):
             "role": "user",
             "content": [
                 {
-                "text": "{\n  \"asset\": \"AAPL\",\n  \"current_price\": 250,\n  \"news\": [\n    \"AAPL reports 20% increase in quarterly revenue.\",\n    \"Lawsuit filed against AAPL over privacy concerns.\",\n    \"AAPLlaunches new smartphone model.\"\n  ]\n}",
-                "type": "text"
+                "type": "text",
+                "text": "{\n  \"asset\": \"AAPL\",\n  \"current_price\": 250,\n  \"news\": [\n    \"AAPL reports 50% increase in quarterly revenue. Beats Projected goal for End of Quarter\",\n    \"Lawsuit filed against AAPL over privacy concerns.\",\n    \"AAPL launches new smartphone model with new features that integrate with the upcoming Vision Pros.\"\n  ]\n}"
                 }
             ]
             },
@@ -58,8 +58,8 @@ def simulate_stock_price(example):
             "role": "assistant",
             "content": [
                 {
-                "text": "\n{\n  \"asset\": \"AAPL\",\n  \"current_price\": 250,\n  \"news_effect\": [\n    {\n      \"news\": \"AAPL reports 20% increase in quarterly revenue.\",\n      \"sentiment\": \"positive\",\n      \"impact\": \"+12.50\"\n    },\n    {\n      \"news\": \"Lawsuit filed against AAPL over privacy concerns.\",\n      \"sentiment\": \"negative\",\n      \"impact\": \"-5.00\"\n    },\n    {\n      \"news\": \"AAPLlaunches new smartphone model.\",\n      \"sentiment\": \"positive\",\n      \"impact\": \"+7.50\"\n    }\n  ],\n  \"new_price\": 265.00\n}",
-                "type": "text"
+                "type": "text",
+                "text": "{\n  \"asset\": \"AAPL\",\n  \"current_price\": 250,\n  \"new_price\": 280.00\n}"
                 }
             ]
             },
@@ -76,26 +76,8 @@ def simulate_stock_price(example):
             "role": "assistant",
             "content": [
                 {
-                "text": "\n{\n  \"asset\": \"MSFT\",\n  \"current_price\": 100,\n  \"news_effect\": [\n    {\n      \"news\": \"MSFT reports hiring another 10 thousand new graduates.\",\n      \"sentiment\": \"positive\",\n      \"impact\": \"+1.00\"\n    }\n  ],\n  \"new_price\": 101.00\n}",
-                "type": "text"
-                }
-            ]
-            },
-            {
-            "role": "user",
-            "content": [
-                {
-                "text": "{\n  \"asset\": \"TSLA\",\n  \"current_price\": 150,\n  \"news\": [\n    \"TSLA reports an explosion in their new gigafactory location\",\n    \"Industry experts dislike the new Cybertruck car\",\n  ]\n}",
-                "type": "text"
-                }
-            ]
-            },
-            {
-            "role": "assistant",
-            "content": [
-                {
-                "text": "\n{\n  \"asset\": \"TSLA\",\n  \"current_price\": 150,\n  \"news_effect\": [\n    {\n      \"news\": \"TSLA reports an explosion in their new gigafactory location\",\n      \"sentiment\": \"negative\",\n      \"impact\": \"-10.00\"\n    },\n    {\n      \"news\": \"Industry experts dislike the new Cybertruck car\",\n      \"sentiment\": \"negative\",\n      \"impact\": \"-5.00\"\n    }\n  ],\n  \"new_price\": 135.00\n}",
-                "type": "text"
+                "type": "text",
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 100\n  \"new_price\": 120.00\n}"
                 }
             ]
             },
@@ -104,7 +86,7 @@ def simulate_stock_price(example):
             "content": [
                 {
                 "type": "text",
-                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 500,\n  \"news\": [\n    \"Microsoft Announces Mind-Controlled Video Games: 'Xbox Your Brain'!\",\n    \"Microsoft's New AI-Powered Clippy Crashes Stock Trading: 'Paperclips Everywhere!'\",\n    \"Windows 13 Rollout Stumbles as Users Complain of Unexpected Blue Screens\"\n  ]\n}"
+                "text": "{\n  \"asset\": \"TSLA\",\n  \"current_price\": 150,\n  \"news\": [\n    \"TSLA reports an explosion in their new gigafactory location, which is the main location for manufacturing\",\n    \"Industry experts dislike the new Cybertruck car - They say it looks like a dumpster\",\n  ]\n}"
                 }
             ]
             },
@@ -113,7 +95,43 @@ def simulate_stock_price(example):
             "content": [
                 {
                 "type": "text",
-                "text": "\n{\n  \"asset\": \"MSFT\",\n  \"current_price\": 500,\n  \"news_effect\": [\n    {\n      \"news\": \"Microsoft Announces Mind-Controlled Video Games: 'Xbox Your Brain'!\",\n      \"sentiment\": \"positive\",\n      \"impact\": \"+15.00\"\n    },\n    {\n      \"news\": \"Microsoft's New AI-Powered Clippy Crashes Stock Trading: 'Paperclips Everywhere!'\",\n      \"sentiment\": \"negative\",\n      \"impact\": \"-10.00\"\n    },\n    {\n      \"news\": \"Windows 13 Rollout Stumbles as Users Complain of Unexpected Blue Screens\",\n      \"sentiment\": \"negative\",\n      \"impact\": \"-10.00\"\n    }\n  ],\n  \"new_price\": 495.00\n}"
+                "text": "{\n  \"asset\": \"TSLA\",\n  \"current_price\": 150,\n  \"new_price\": 100.00\n}"
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 500,\n  \"news\": [\n    \"Microsoft Announces Mind-Controlled Video Games: 'Xbox Your Brain'!\",\n    \"Microsoft's New AI-Powered Clippy Crashes Stock Trading: 'Paperclips Everywhere!'\",\n    \"Windows 13 Rollout Stumbles as Users Complain of Unexpected Blue Screens\"\n  ]\n}",
+                "type": "text"
+                }
+            ]
+            },
+            {
+            "role": "assistant",
+            "content": [
+                {
+                "type": "text",
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 500,\n  \"new_price\": 465.00\n}"
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 465,\n  \"news\": [\n    \"Microsoft Acquires Espresso Tech: Future Office Meetings to Be Powered by Coffee!\",\n    \"New Windows Update Touted as 'Perfect' by Developers, But Users Find Bugs Quickly\",\n    \"Microsoft's Cloud Gaming Expansion Faces Backlash from Traditional Gamers\"\n  ]\n}"
+                }
+            ]
+            },
+            {
+            "role": "assistant",
+            "content": [
+                {
+                "type": "text",
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 495,\n  \"new_price\": 465.00\n}"
                 }
             ]
             },
@@ -233,7 +251,7 @@ def generate_news_headlines(next_company):
             ]
             }
         ],
-        temperature=1,
+        temperature=1.2,
         max_tokens=6261,
         top_p=1,
         frequency_penalty=0,
@@ -395,13 +413,16 @@ def join_room():
         return jsonify({'error': 'Room not found'}), 404
 
     room_data = room.to_dict()
+    if room_data.get('started'):
+        return jsonify({'error': 'The game has already started', 'started': True}), 403
+
     if uid not in room_data['authorizedPlayers']:
         room_ref.update({
             'players': firestore.ArrayUnion([display_name]),
             'authorizedPlayers': firestore.ArrayUnion([uid])
         })
 
-    return jsonify({'message': 'Joined room', 'gameCode': game_code}), 200
+    return jsonify({'message': 'Joined room', 'gameCode': game_code, 'started': False}), 200
 
 @app.route('/start_game', methods=['POST'])
 @cross_origin()
@@ -757,7 +778,7 @@ def check_round_completion():
     if all_users_completed:
         current_round_index = next((index for index, round_data in enumerate(room_data['market_data']) if round_data['round_id'] == round_code), None)
         if current_round_index is None or current_round_index + 1 >= len(room_data['market_data']):
-            return jsonify({'error': 'No more rounds available'}), 400
+            return jsonify({'allUsersCompleted': True, 'newRoundCode': None}), 200
 
         new_round_code = room_data['market_data'][current_round_index + 1]['round_id']
         return jsonify({'allUsersCompleted': True, 'newRoundCode': new_round_code}), 200
@@ -779,30 +800,33 @@ def leaderboard():
     room_data = room.to_dict()
     portfolios = room_data.get('portfolios', {})
     authorized_players = room_data.get('authorizedPlayers', [])
-    players = room_data.get('players', [])
 
     leaderboard_data = []
     history_data = []
 
     for round_index, round_data in enumerate(room_data['market_data']):
         round_history = {'round': round_index + 1}
-        for uid, portfolio in portfolios.items():
-            index = authorized_players.index(uid)
-            player_name = players[index]
+        for uid in authorized_players:
+            try:
+                user = auth.get_user(uid)
+                player_name = user.display_name if user.display_name else user.email.split('@')[0]
+            except Exception as e:
+                player_name = "Unknown"
+            portfolio = portfolios.get(uid, {})
             value_history = portfolio.get('value_history', [])
             if round_index < len(value_history):
                 latest_value = value_history[round_index]
-                leaderboard_data.append({
-                    'name': player_name,
-                    'value': latest_value
-                })
-                round_history[f'player{index + 1}'] = latest_value
+                round_history[player_name] = latest_value
         history_data.append(round_history)
 
     unique_leaderboard = {}
-    for uid, portfolio in portfolios.items():
-        index = authorized_players.index(uid)
-        player_name = players[index]
+    for uid in authorized_players:
+        try:
+            user = auth.get_user(uid)
+            player_name = user.display_name if user.display_name else user.email.split('@')[0]
+        except Exception as e:
+            player_name = "Unknown"
+        portfolio = portfolios.get(uid, {})
         latest_value = portfolio.get('value_history', [])[-1] if portfolio.get('value_history') else 0
         unique_leaderboard[player_name] = latest_value
 
@@ -811,23 +835,38 @@ def leaderboard():
 
     return jsonify({'leaderboard': leaderboard_data, 'history': history_data}), 200
 
+@app.route('/check_user_round_completion', methods=['POST'])
+@cross_origin()
+def check_user_round_completion():
+    data = request.get_json()
+    game_code = data.get('gameCode')
+    round_code = data.get('roundCode')
+    id_token = data.get('idToken')
+
+    if not all([game_code, round_code, id_token]):
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+    except Exception as e:
+        return jsonify({'error': 'Invalid ID token'}), 401
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    completed_rounds = room_data.get('completed_rounds', {}).get(round_code, [])
+    user_completed = uid in completed_rounds
+
+    return jsonify({'userCompleted': user_completed}), 200
+
+@app.route('/readines_check', methods=['GET'])
+@cross_origin()
+def readiness_check():
+    return jsonify({'status': 'ready'}), 200
+
 if __name__ == '__main__':
-    # Example usage
-    # example = {
-    # "asset": "MSFT",
-    # "current_price": 495,
-    # "news": [
-    #     "Microsoft Acquires Espresso Tech: Future Office Meetings to Be Powered by Coffee!",
-    #     "New Windows Update Touted as 'Perfect' by Developers, But Users Find Bugs Quickly",
-    #     "Microsoft's Cloud Gaming Expansion Faces Backlash from Traditional Gamers"
-    # ]
-    # }
-
-    # next_company = "Verizon"
-
-    # stock_price_simulation = simulate_stock_price(example)
-    # news_headlines = generate_news_headlines(next_company)
-
-    # print(stock_price_simulation)
-    # print(news_headlines)
     app.run(debug=True)

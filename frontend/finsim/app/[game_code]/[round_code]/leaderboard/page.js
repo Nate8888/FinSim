@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tooltip as UITooltip } from "@/components/ui/tooltip"
 import { use } from 'react'
+import { useAuth } from "@/contexts/AuthContext"
 
 const data = [
     { round: 1, player1: 1000000, player2: 1200000, player3: 800000, player4: 950000, player5: 1100000, player6: 850000, player7: 1050000, player8: 900000 },
@@ -29,6 +30,26 @@ const players = [
     { id: 8, name: "Sophia Martinez", initials: "SM", value: 1100000, change: "+22.22%", color: "#8B0000" },
 ]
 
+async function checkUserRoundCompletion(game_code, round_code, idToken) {
+  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+      idToken,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return data.userCompleted;
+  }
+  return false;
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -37,9 +58,7 @@ export default function Page({ params }) {
 
 function Leaderboard({ game_code, round_code }) {
     const router = useRouter()
-    // const searchParams = useSearchParams()
-    // const game_code = searchParams.get('game_code')
-    // const round_code = searchParams.get('round_code')
+    const { isAuthenticated, getIdToken } = useAuth();
     const [time, setTime] = useState(90)
     const [leaderboard, setLeaderboard] = useState([])
     const [history, setHistory] = useState([])
@@ -52,14 +71,28 @@ function Leaderboard({ game_code, round_code }) {
     }, [])
 
     useEffect(() => {
+        const checkAuthAndFetchData = async () => {
+            const authenticated = await isAuthenticated();
+            if (!authenticated) {
+                router.push('/');
+            } else {
+                const idToken = await getIdToken();
+                const userCompleted = await checkUserRoundCompletion(game_code, round_code, idToken);
+                if (userCompleted) {
+                    router.push(`/${game_code}/${round_code}/wait`);
+                    return;
+                }
+                await fetchLeaderboard();
+            }
+        };
         async function fetchLeaderboard() {
             const response = await fetch(`http://127.0.0.1:5000/leaderboard?gameCode=${game_code}`)
             const data = await response.json()
             setLeaderboard(data.leaderboard)
             setHistory(data.history)
         }
-        fetchLeaderboard()
-    }, [game_code])
+        checkAuthAndFetchData();
+    }, [game_code, round_code, router, isAuthenticated, getIdToken])
 
     const formatTime = () => {
         const minutes = Math.floor(time / 60)
@@ -123,12 +156,12 @@ function Leaderboard({ game_code, round_code }) {
                                     formatter={(value) => [`$${value.toLocaleString()}`, "Portfolio Value"]}
                                     labelFormatter={(label) => `Round ${label}`}
                                 />
-                                {players.map((player) => (
+                                {leaderboard.map((player, index) => (
                                     <Line
-                                        key={player.id}
+                                        key={player.name}
                                         type="monotone"
-                                        dataKey={`player${player.id}`}
-                                        stroke={player.color}
+                                        dataKey={player.name}
+                                        stroke={players[index]?.color || "#000"}
                                         strokeWidth={2}
                                         dot={false}
                                     />

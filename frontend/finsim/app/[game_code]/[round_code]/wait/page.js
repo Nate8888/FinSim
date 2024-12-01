@@ -8,6 +8,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useRouter } from 'next/navigation'
 import { use } from 'react'
 
+async function checkRoundCompletion(game_code, round_code, router) {
+  const response = await fetch('http://localhost:5000/check_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    if (data.allUsersCompleted) {
+      if (data.newRoundCode && data.newRoundCode !== round_code && data.newRoundCode !== 'null') {
+        router.push(`/${game_code}/${data.newRoundCode}/portfolio`);
+      } else {
+        router.push(`/${game_code}/game_concluded`);
+      }
+    }
+  }
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -32,33 +56,19 @@ function WaitComponent({ game_code, round_code, roundDuration = 120 }) {
       })
     }, 1000)
 
-    const checkCompletionInterval = setInterval(async () => {
-      const response = await fetch('http://localhost:5000/check_round_completion', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gameCode: game_code,
-          roundCode: round_code,
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (data.allUsersCompleted) {
-          clearInterval(checkCompletionInterval)
-          localStorage.removeItem('endTime') // Remove endTime from localStorage
-          router.push(`/${game_code}/${data.newRoundCode}/portfolio`)
-        }
-      }
-    }, 10000) // Check every 5 seconds
+    const checkCompletionInterval = setInterval(() => {
+      checkRoundCompletion(game_code, round_code, router)
+    }, 10000) // Check every 10 seconds
 
     return () => {
       clearInterval(timer)
       clearInterval(checkCompletionInterval)
     }
   }, [roundDuration, router, game_code, round_code])
+
+  useEffect(() => {
+    checkRoundCompletion(game_code, round_code, router)
+  }, [game_code, round_code, router])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white flex items-center justify-center p-4">
