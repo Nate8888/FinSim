@@ -48,6 +48,7 @@ function WaitComponent({ game_code, round_code, roundDuration = 120 }) {
         const data = await response.json()
         if (data.allUsersCompleted) {
           clearInterval(checkCompletionInterval)
+          localStorage.removeItem('endTime') // Remove endTime from localStorage
           router.push(`/${game_code}/${data.newRoundCode}/portfolio`)
         }
       }

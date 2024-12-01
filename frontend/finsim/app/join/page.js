@@ -18,6 +18,7 @@ export default function Join() {
   const { setLoading } = useLoading()
 
   useEffect(() => {
+    localStorage.removeItem('endTime');
     const checkAuth = async () => {
       const authenticated = await isAuthenticated()
       if (!authenticated) {

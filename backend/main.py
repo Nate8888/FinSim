@@ -620,7 +620,8 @@ def get_round_market_data():
     return jsonify({
         'marketData': market_data, 
         'portfolio': portfolio,
-        'roundIndex': round_index
+        'roundIndex': round_index,
+        'timePerRound': room_data['timePerRound']
     }), 200
 
 @app.route('/close_position', methods=['POST'])

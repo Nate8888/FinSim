@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { TrendingUp } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -21,6 +21,10 @@ export default function Signup() {
   const { setLoading } = useLoading()
   const { registerWithEmail, signInWithGoogle, sendVerificationEmail, verifyCode } = useAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    localStorage.removeItem('endTime');
+  }, []);
 
   const handleSendVerification = async (e) => {
     e.preventDefault();

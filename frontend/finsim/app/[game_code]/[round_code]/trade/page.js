@@ -60,11 +60,30 @@ function Trading({ game_code, round_code }) {
   const [roundIndex, setRoundIndex] = useState(null);
 
   useEffect(() => {
+    const storedEndTime = localStorage.getItem('endTime');
+    let endTime;
+    if (storedEndTime) {
+      endTime = new Date(parseInt(storedEndTime, 10));
+    } else {
+      const storedTimePerRound = localStorage.getItem('timePerRound');
+      const roundDuration = storedTimePerRound ? parseInt(storedTimePerRound, 10) : 90;
+      endTime = new Date(Date.now() + roundDuration * 1000);
+      localStorage.setItem('endTime', endTime.getTime());
+    }
+
     const timer = setInterval(() => {
-      setTime((prevTime) => (prevTime > 0 ? prevTime - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+      const currentTime = new Date();
+      const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+      setTime(timeDiff);
+
+      if (timeDiff <= 0) {
+        clearInterval(timer);
+        handleSubmit();  // Call handleSubmit when the round ends
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (chartRef.current && portfolio?.value_history) {
@@ -166,6 +185,7 @@ function Trading({ game_code, round_code }) {
             totalHoldings
           };
         }));
+        localStorage.setItem('timePerRound', data.timePerRound);  // Store timePerRound in localStorage
       } catch (error) {
         console.error('Error fetching market data:', error);
       }

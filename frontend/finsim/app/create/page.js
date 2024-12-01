@@ -30,6 +30,7 @@ export default function Create() {
     const router = useRouter();
 
     useEffect(() => {
+        localStorage.removeItem('endTime');
         const checkAuth = async () => {
             const authenticated = await isAuthenticated();
             if (!authenticated) {

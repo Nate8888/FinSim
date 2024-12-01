@@ -18,6 +18,7 @@ export default function Signin() {
   const { setLoading } = useLoading()
 
   useEffect(() => {
+    localStorage.removeItem('endTime');
     getCurrentUser().then((user) => {
       if (user) {
         router.push('/action')
