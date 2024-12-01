@@ -13,7 +13,7 @@ from openai import OpenAI
 import json
 import os
 import uuid
-# loadenv
+import copy 
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -282,7 +282,12 @@ def simulate_market(previous_round=None):
     else:
         stocks = previous_round['stocks']
         for stock in stocks:
-            stock['price'] = round(stock['price'] * (1 + random.uniform(-0.11, 0.20)), 2)
+            predict_next_price = simulate_stock_price({
+                "asset": stock['ticker'],
+                "current_price": stock['price'],
+                "news": stock['news']
+            })
+            stock['price'] = predict_next_price['new_price']
         interest_rate = round(previous_round['interest_rate'] + random.uniform(-0.5, 0.5), 2)
         inflation_rate = round(previous_round['inflation_rate'] + random.uniform(-0.5, 0.5), 2)
         gdp_growth_rate = round(previous_round['gdp_growth_rate'] + random.uniform(-0.5, 0.5), 2)
@@ -310,7 +315,10 @@ def generate_all_rounds(rounds, time_per_round):
         new_round = simulate_market(previous_round)
         new_round['round_id'] = generate_round_id()
         market_data.append(new_round)
-        previous_round = new_round
+        previous_round = copy.deepcopy(new_round)  # Make a deep copy of the round data
+    # Let's dump the round to a file
+    with open('market_data.json', 'w') as f:
+        json.dump(market_data, f)
     return market_data
 
 @app.route('/create_room', methods=['POST'])
@@ -583,15 +591,28 @@ def get_round_market_data():
         return jsonify({'error': 'Room not found'}), 404
 
     room_data = room.to_dict()
-    market_data = next((round_data for round_data in room_data['market_data'] if round_data['round_id'] == round_code), None)
-    if not market_data:
+    
+    # Find the round index along with the market data
+    round_index = None
+    market_data = None
+    for idx, round_data in enumerate(room_data['market_data']):
+        if round_data['round_id'] == round_code:
+            round_index = idx
+            market_data = round_data
+            break
+
+    if market_data is None:
         return jsonify({'error': 'Round not found'}), 404
 
     portfolio = room_data['portfolios'].get(uid)
     if not portfolio:
         return jsonify({'error': 'Portfolio not found'}), 404
 
-    return jsonify({'marketData': market_data, 'portfolio': portfolio}), 200
+    return jsonify({
+        'marketData': market_data, 
+        'portfolio': portfolio,
+        'roundIndex': round_index
+    }), 200
 
 @app.route('/close_position', methods=['POST'])
 @cross_origin()
