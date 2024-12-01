@@ -598,11 +598,20 @@ def get_round_market_data():
     for idx, round_data in enumerate(room_data['market_data']):
         if round_data['round_id'] == round_code:
             round_index = idx
-            market_data = round_data
+            market_data = round_data.copy()  # Make a copy to avoid modifying original data
             break
 
     if market_data is None:
         return jsonify({'error': 'Round not found'}), 404
+
+    # Add previous prices to stocks
+    for stock in market_data['stocks']:
+        if round_index == 0:
+            stock['previous_price'] = stock['price']  # Same price for first round
+        else:
+            previous_round = room_data['market_data'][round_index - 1]
+            previous_stock = next((s for s in previous_round['stocks'] if s['ticker'] == stock['ticker']), None)
+            stock['previous_price'] = previous_stock['price'] if previous_stock else stock['price']
 
     portfolio = room_data['portfolios'].get(uid)
     if not portfolio:
