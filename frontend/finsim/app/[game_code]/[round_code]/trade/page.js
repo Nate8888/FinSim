@@ -30,6 +30,19 @@ export default function Page({ params }) {
 }
 
 function Trading({ game_code, round_code }) {
+  const COMPANY_NAMES = {
+    'AAPL': 'Apple Inc.',
+    'MSFT': 'Microsoft Corporation',
+    'GOOGL': 'Alphabet Inc.',
+    'AMZN': 'Amazon.com Inc.',
+    'META': 'Meta Platforms Inc.',
+    'TSLA': 'Tesla Inc.',
+    'BRK-B': 'Berkshire Hathaway Inc.',
+    'JNJ': 'Johnson & Johnson',
+    'V': 'Visa Inc.',
+    'WMT': 'Walmart Inc.'
+  };
+
   const router = useRouter()
   // const searchParams = useSearchParams()
   // const game_code = searchParams.get('game_code')
@@ -141,10 +154,13 @@ function Trading({ game_code, round_code }) {
             : [];
           const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
           const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          const percentChange = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
           return {
             id: stock.ticker,
             name: stock.ticker,
             price: stock.price,
+            previousPrice: stock.previous_price,
+            percentChange: percentChange,
             positions,
             totalShares,
             totalHoldings
@@ -295,7 +311,6 @@ function Trading({ game_code, round_code }) {
     setLoading(false)
   }
   
-
   const calculateTotalAssets = () => {
     return stocks.reduce((total, stock) => {
       const positions = stock.positions;
@@ -439,8 +454,8 @@ function Trading({ game_code, round_code }) {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{selectedStock.name}</h3>
-                          <span className="text-sm text-green-600">+{selectedStock.returnPct}%</span>
+                          <h3 className="font-semibold">{selectedStock.name} - {COMPANY_NAMES[selectedStock.name]}</h3>
+                          <span className="text-sm text-green-600">+{selectedStock.percentChange.toFixed(2)}%</span>
                         </div>
                         <div className="mt-1 flex justify-between text-sm text-gray-600">
                           <span>Holdings: ${selectedStock.totalHoldings.toLocaleString()}</span>
@@ -510,13 +525,18 @@ function Trading({ game_code, round_code }) {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-semibold">{stock.name}</h3>
-                            <Button 
-                              className="bg-blue-500 hover:bg-blue-600"
-                              onClick={() => setSelectedStock(stock)}
-                            >
-                              Trade
-                            </Button>
+                            <h3 className="font-semibold">{stock.name} - {COMPANY_NAMES[stock.name]}</h3>
+                            <div className="flex items-center gap-4">
+                              <span className={`text-sm ${stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {stock.percentChange >= 0 ? '+' : ''}{stock.percentChange.toFixed(2)}%
+                              </span>
+                              <Button 
+                                className="bg-blue-500 hover:bg-blue-600"
+                                onClick={() => setSelectedStock(stock)}
+                              >
+                                Trade
+                              </Button>
+                            </div>
                           </div>
                           <div className="mt-1 flex justify-between text-sm text-gray-600">
                             <span>Price: ${stock.price.toFixed(2)}</span>
