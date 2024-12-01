@@ -864,22 +864,4 @@ def check_user_round_completion():
     return jsonify({'userCompleted': user_completed}), 200
 
 if __name__ == '__main__':
-    # Example usage
-    # example = {
-    # "asset": "MSFT",
-    # "current_price": 495,
-    # "news": [
-    #     "Microsoft Acquires Espresso Tech: Future Office Meetings to Be Powered by Coffee!",
-    #     "New Windows Update Touted as 'Perfect' by Developers, But Users Find Bugs Quickly",
-    #     "Microsoft's Cloud Gaming Expansion Faces Backlash from Traditional Gamers"
-    # ]
-    # }
-
-    # next_company = "Verizon"
-
-    # stock_price_simulation = simulate_stock_price(example)
-    # news_headlines = generate_news_headlines(next_company)
-
-    # print(stock_price_simulation)
-    # print(news_headlines)
     app.run(debug=True)
