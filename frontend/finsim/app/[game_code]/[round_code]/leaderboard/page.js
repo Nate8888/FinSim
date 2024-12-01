@@ -29,6 +29,26 @@ const players = [
     { id: 8, name: "Sophia Martinez", initials: "SM", value: 1100000, change: "+22.22%", color: "#8B0000" },
 ]
 
+async function checkUserRoundCompletion(game_code, round_code, idToken) {
+  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+      idToken,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return data.userCompleted;
+  }
+  return false;
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -52,14 +72,28 @@ function Leaderboard({ game_code, round_code }) {
     }, [])
 
     useEffect(() => {
+        const checkAuthAndFetchData = async () => {
+            const authenticated = await isAuthenticated();
+            if (!authenticated) {
+                router.push('/');
+            } else {
+                const idToken = await getIdToken();
+                const userCompleted = await checkUserRoundCompletion(game_code, round_code, idToken);
+                if (userCompleted) {
+                    router.push(`/${game_code}/${round_code}/wait`);
+                    return;
+                }
+                await fetchLeaderboard();
+            }
+        };
         async function fetchLeaderboard() {
             const response = await fetch(`http://127.0.0.1:5000/leaderboard?gameCode=${game_code}`)
             const data = await response.json()
             setLeaderboard(data.leaderboard)
             setHistory(data.history)
         }
-        fetchLeaderboard()
-    }, [game_code])
+        checkAuthAndFetchData();
+    }, [game_code, round_code, router, isAuthenticated, getIdToken])
 
     const formatTime = () => {
         const minutes = Math.floor(time / 60)

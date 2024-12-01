@@ -23,6 +23,26 @@ function ErrorFallback({error}) {
   )
 }
 
+async function checkUserRoundCompletion(game_code, round_code, idToken) {
+  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+      idToken,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return data.userCompleted;
+  }
+  return false;
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -86,53 +106,6 @@ function Trading({ game_code, round_code }) {
   }, []);
 
   useEffect(() => {
-    if (chartRef.current && portfolio?.value_history) {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-
-      const ctx = chartRef.current.getContext('2d')
-      chartInstance.current = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: portfolio.value_history.map((_, index) => `Round ${index + 1}`),
-          datasets: [{
-            label: 'Portfolio Value',
-            data: portfolio.value_history,
-            borderColor: 'hsl(var(--primary))',
-            tension: 0.1
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: false,
-              ticks: {
-                callback: (value) => `$${(value / 1000).toFixed(1)}K`
-              }
-            }
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (context) => `Value: $${(context.parsed.y).toFixed(2)}`
-              }
-            }
-          }
-        }
-      })
-    }
-
-    return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-    }
-  }, [portfolio?.value_history])
-
-  useEffect(() => {
     const checkAuthAndFetchData = async () => {
       setLoading(true)
       const authenticated = await isAuthenticated();
@@ -140,6 +113,11 @@ function Trading({ game_code, round_code }) {
         router.push('/');
       } else {
         const idToken = await getIdToken();
+        const userCompleted = await checkUserRoundCompletion(game_code, round_code, idToken);
+        if (userCompleted) {
+          router.push(`/${game_code}/${round_code}/wait`);
+          return;
+        }
         const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
         setUser(decodedToken);
         if (game_code && round_code) {

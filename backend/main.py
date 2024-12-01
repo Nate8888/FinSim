@@ -757,7 +757,7 @@ def check_round_completion():
     if all_users_completed:
         current_round_index = next((index for index, round_data in enumerate(room_data['market_data']) if round_data['round_id'] == round_code), None)
         if current_round_index is None or current_round_index + 1 >= len(room_data['market_data']):
-            return jsonify({'error': 'No more rounds available'}), 400
+            return jsonify({'allUsersCompleted': True, 'newRoundCode': None}), 200
 
         new_round_code = room_data['market_data'][current_round_index + 1]['round_id']
         return jsonify({'allUsersCompleted': True, 'newRoundCode': new_round_code}), 200
@@ -810,6 +810,34 @@ def leaderboard():
     leaderboard_data = [{'name': name, 'value': value} for name, value in sorted_leaderboard]
 
     return jsonify({'leaderboard': leaderboard_data, 'history': history_data}), 200
+
+@app.route('/check_user_round_completion', methods=['POST'])
+@cross_origin()
+def check_user_round_completion():
+    data = request.get_json()
+    game_code = data.get('gameCode')
+    round_code = data.get('roundCode')
+    id_token = data.get('idToken')
+
+    if not all([game_code, round_code, id_token]):
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+    except Exception as e:
+        return jsonify({'error': 'Invalid ID token'}), 401
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    completed_rounds = room_data.get('completed_rounds', {}).get(round_code, [])
+    user_completed = uid in completed_rounds
+
+    return jsonify({'userCompleted': user_completed}), 200
 
 if __name__ == '__main__':
     # Example usage

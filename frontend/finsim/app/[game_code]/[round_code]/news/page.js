@@ -14,6 +14,26 @@ import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, ChevronDown,
 import { Tooltip } from "@/components/ui/tooltip"
 import { useAuth } from "@/contexts/AuthContext"
 
+async function checkUserRoundCompletion(game_code, round_code, idToken) {
+  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      gameCode: game_code,
+      roundCode: round_code,
+      idToken,
+    }),
+  });
+
+  if (response.ok) {
+    const data = await response.json();
+    return data.userCompleted;
+  }
+  return false;
+}
+
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -76,6 +96,11 @@ function News({ game_code, round_code }) {
         router.push('/');
       } else {
         const idToken = await getIdToken();
+        const userCompleted = await checkUserRoundCompletion(game_code, round_code, idToken);
+        if (userCompleted) {
+          router.push(`/${game_code}/${round_code}/wait`);
+          return;
+        }
         const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
         setUser(decodedToken);
         if (game_code && round_code) {
