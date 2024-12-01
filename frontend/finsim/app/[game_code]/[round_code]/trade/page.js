@@ -23,14 +23,6 @@ function ErrorFallback({error}) {
   )
 }
 
-const data = [
-  { round: 1, balance: 1200000 },
-  { round: 2, balance: 1400000 },
-  { round: 3, balance: 1300000 },
-  { round: 4, balance: 1600000 },
-  { round: 5, balance: 1550000 },
-]
-
 export default function Page({ params }) {
   const actualParams = use(params)
   const { game_code, round_code } = actualParams
@@ -38,6 +30,19 @@ export default function Page({ params }) {
 }
 
 function Trading({ game_code, round_code }) {
+  const COMPANY_NAMES = {
+    'AAPL': 'Apple Inc.',
+    'MSFT': 'Microsoft Corporation',
+    'GOOGL': 'Alphabet Inc.',
+    'AMZN': 'Amazon.com Inc.',
+    'META': 'Meta Platforms Inc.',
+    'TSLA': 'Tesla Inc.',
+    'BRK-B': 'Berkshire Hathaway Inc.',
+    'JNJ': 'Johnson & Johnson',
+    'V': 'Visa Inc.',
+    'WMT': 'Walmart Inc.'
+  };
+
   const router = useRouter()
   // const searchParams = useSearchParams()
   // const game_code = searchParams.get('game_code')
@@ -52,6 +57,7 @@ function Trading({ game_code, round_code }) {
   const [user, setUser] = useState(null);
   const [portfolio, setPortfolio] = useState(null);
   const [stocks, setStocks] = useState([]);
+  const [roundIndex, setRoundIndex] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -61,7 +67,7 @@ function Trading({ game_code, round_code }) {
   }, [])
 
   useEffect(() => {
-    if (chartRef.current) {
+    if (chartRef.current && portfolio?.value_history) {
       if (chartInstance.current) {
         chartInstance.current.destroy()
       }
@@ -70,10 +76,10 @@ function Trading({ game_code, round_code }) {
       chartInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.map(d => `Round ${d.round}`),
+          labels: portfolio.value_history.map((_, index) => `Round ${index + 1}`),
           datasets: [{
-            label: 'Balance',
-            data: data.map(d => d.balance),
+            label: 'Portfolio Value',
+            data: portfolio.value_history,
             borderColor: 'hsl(var(--primary))',
             tension: 0.1
           }]
@@ -85,14 +91,14 @@ function Trading({ game_code, round_code }) {
             y: {
               beginAtZero: false,
               ticks: {
-                callback: (value) => `$${(value / 1000000).toFixed(1)}M`
+                callback: (value) => `$${(value / 1000).toFixed(1)}K`
               }
             }
           },
           plugins: {
             tooltip: {
               callbacks: {
-                label: (context) => `Balance: $${(context.parsed.y / 1000000).toFixed(2)}M`
+                label: (context) => `Value: $${(context.parsed.y).toFixed(2)}`
               }
             }
           }
@@ -105,7 +111,7 @@ function Trading({ game_code, round_code }) {
         chartInstance.current.destroy()
       }
     }
-  }, [])
+  }, [portfolio?.value_history])
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -141,16 +147,20 @@ function Trading({ game_code, round_code }) {
         }
         const data = await response.json();
         setPortfolio(data.portfolio);
+        setRoundIndex(data.roundIndex);
         setStocks(data.marketData.stocks.map(stock => {
           const positions = data.portfolio.holdings
             ? data.portfolio.holdings.filter(h => h.ticker === stock.ticker)
             : [];
           const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
           const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          const percentChange = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
           return {
             id: stock.ticker,
             name: stock.ticker,
             price: stock.price,
+            previousPrice: stock.previous_price,
+            percentChange: percentChange,
             positions,
             totalShares,
             totalHoldings
@@ -199,7 +209,7 @@ function Trading({ game_code, round_code }) {
         operation: 'buy',
         amount: tradeAmount,
         gameCode: game_code,
-        roundIndex: 0, // Assuming round_index is 0 for the current round
+        roundIndex: roundIndex,
         roundCode: round_code,
       }),
     })
@@ -257,7 +267,7 @@ function Trading({ game_code, round_code }) {
         operation: 'sell',
         amount: tradeAmount,
         gameCode: game_code,
-        roundIndex: 0, // Assuming round_index is 0 for the current round
+        roundIndex: roundIndex,
         roundCode: round_code,
       }),
     })
@@ -301,7 +311,6 @@ function Trading({ game_code, round_code }) {
     setLoading(false)
   }
   
-
   const calculateTotalAssets = () => {
     return stocks.reduce((total, stock) => {
       const positions = stock.positions;
@@ -445,8 +454,8 @@ function Trading({ game_code, round_code }) {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold">{selectedStock.name}</h3>
-                          <span className="text-sm text-green-600">+{selectedStock.returnPct}%</span>
+                          <h3 className="font-semibold">{selectedStock.name} - {COMPANY_NAMES[selectedStock.name]}</h3>
+                          <span className="text-sm text-green-600">+{selectedStock.percentChange.toFixed(2)}%</span>
                         </div>
                         <div className="mt-1 flex justify-between text-sm text-gray-600">
                           <span>Holdings: ${selectedStock.totalHoldings.toLocaleString()}</span>
@@ -516,13 +525,18 @@ function Trading({ game_code, round_code }) {
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-semibold">{stock.name}</h3>
-                            <Button 
-                              className="bg-blue-500 hover:bg-blue-600"
-                              onClick={() => setSelectedStock(stock)}
-                            >
-                              Trade
-                            </Button>
+                            <h3 className="font-semibold">{stock.name} - {COMPANY_NAMES[stock.name]}</h3>
+                            <div className="flex items-center gap-4">
+                              <span className={`text-sm ${stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {stock.percentChange >= 0 ? '+' : ''}{stock.percentChange.toFixed(2)}%
+                              </span>
+                              <Button 
+                                className="bg-blue-500 hover:bg-blue-600"
+                                onClick={() => setSelectedStock(stock)}
+                              >
+                                Trade
+                              </Button>
+                            </div>
                           </div>
                           <div className="mt-1 flex justify-between text-sm text-gray-600">
                             <span>Price: ${stock.price.toFixed(2)}</span>

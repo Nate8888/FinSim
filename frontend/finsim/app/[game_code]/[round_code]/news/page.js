@@ -21,6 +21,19 @@ export default function Page({ params }) {
 }
 
 function News({ game_code, round_code }) {
+  const COMPANY_NAMES = {
+    'AAPL': 'Apple Inc.',
+    'MSFT': 'Microsoft Corporation',
+    'GOOGL': 'Alphabet Inc.',
+    'AMZN': 'Amazon.com Inc.',
+    'META': 'Meta Platforms Inc.',
+    'TSLA': 'Tesla Inc.',
+    'BRK-B': 'Berkshire Hathaway Inc.',
+    'JNJ': 'Johnson & Johnson',
+    'V': 'Visa Inc.',
+    'WMT': 'Walmart Inc.'
+  };
+
   const router = useRouter()
   const { isAuthenticated, getIdToken } = useAuth();
   const [time, setTime] = useState(90)
@@ -115,7 +128,7 @@ function News({ game_code, round_code }) {
 
   const companyNews = marketData ? marketData.stocks.flatMap(stock => 
     stock.news.map(newsItem => ({
-      headline: `${stock.ticker}: ${newsItem}`,
+      headline: `${stock.ticker} (${COMPANY_NAMES[stock.ticker]}): ${newsItem}`,
       content: newsItem
     }))
   ) : [];

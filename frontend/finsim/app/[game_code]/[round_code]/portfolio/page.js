@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy } from "lucide-react"
+import { Home, LineChart as ChartIcon, Newspaper, Settings, Trophy, Info, ChevronDown, ChevronUp } from "lucide-react"
+import { Tooltip } from "@/components/ui/tooltip"
 import { ErrorBoundary } from 'react-error-boundary'
 import Chart from 'chart.js/auto'
-import { Tooltip } from "@/components/ui/tooltip"
-import { Info } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useLoading } from '@/contexts/loading-context'
 
 function ErrorFallback({error}) {
   return (
@@ -20,33 +21,64 @@ function ErrorFallback({error}) {
   )
 }
 
-const data = [
-  { round: 1, balance: 1200000 },
-  { round: 2, balance: 1400000 },
-  { round: 3, balance: 1300000 },
-  { round: 4, balance: 1600000 },
-  { round: 5, balance: 1550000 },
-]
-
-const stocks = [
-  { id: 1, name: 'Apple', holdings: '$150,000', shares: '1,000', returnPct: '5.50%' },
-  { id: 2, name: 'Google', holdings: '$200,000', shares: '800', returnPct: '4.00%' },
-  { id: 3, name: 'Amazon', holdings: '$250,000', shares: '500', returnPct: '3.00%' },
-]
-
-export default async function Page({ params }) {
-  const { game_code, round_code } = await params
+export default function Page({ params }) {
+  const actualParams = use(params)
+  const { game_code, round_code } = actualParams
   return <Portfolio game_code={game_code} round_code={round_code} />
 }
 
 function Portfolio({ game_code, round_code }) {
   const router = useRouter()
-  // const searchParams = useSearchParams()
-  // const game_code = searchParams.get('game_code')
-  // const round_code = searchParams.get('round_code')
   const [time, setTime] = useState(90)
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
+  const [expandedStocks, setExpandedStocks] = useState(new Set())
+  const { isAuthenticated, getIdToken } = useAuth();
+  const { isLoading, setLoading } = useLoading()
+  const [user, setUser] = useState(null);
+  const [portfolio, setPortfolio] = useState(null);
+  const [stocks, setStocks] = useState([]);
+  const [roundIndex, setRoundIndex] = useState(null);
+
+  const COMPANY_NAMES = {
+    'AAPL': 'Apple Inc.',
+    'MSFT': 'Microsoft Corporation',
+    'GOOGL': 'Alphabet Inc.',
+    'AMZN': 'Amazon.com Inc.',
+    'META': 'Meta Platforms Inc.',
+    'TSLA': 'Tesla Inc.',
+    'BRK-B': 'Berkshire Hathaway Inc.',
+    'JNJ': 'Johnson & Johnson',
+    'V': 'Visa Inc.',
+    'WMT': 'Walmart Inc.'
+  };
+
+  const calculateTotalAssets = () => {
+    return stocks.reduce((total, stock) => {
+      const positions = stock.positions;
+      const stockPrice = stock.price;
+      const totalHoldings = positions.reduce((sum, pos) => {
+        if (pos.shares < 0) {
+          return sum + (pos.price - stockPrice) * Math.abs(pos.shares) + pos.price * Math.abs(pos.shares);
+        } else {
+          return sum + stockPrice * pos.shares;
+        }
+      }, 0);
+      return total + totalHoldings;
+    }, 0);
+  };
+
+  const toggleStock = (stockId) => {
+    setExpandedStocks(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(stockId)) {
+        newSet.delete(stockId)
+      } else {
+        newSet.add(stockId)
+      }
+      return newSet
+    })
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -56,7 +88,7 @@ function Portfolio({ game_code, round_code }) {
   }, [])
 
   useEffect(() => {
-    if (chartRef.current) {
+    if (chartRef.current && portfolio?.value_history) {
       if (chartInstance.current) {
         chartInstance.current.destroy()
       }
@@ -65,10 +97,10 @@ function Portfolio({ game_code, round_code }) {
       chartInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.map(d => `Round ${d.round}`),
+          labels: portfolio.value_history.map((_, index) => `Round ${index + 1}`),
           datasets: [{
-            label: 'Balance',
-            data: data.map(d => d.balance),
+            label: 'Portfolio Value',
+            data: portfolio.value_history,
             borderColor: 'hsl(var(--primary))',
             tension: 0.1
           }]
@@ -80,14 +112,14 @@ function Portfolio({ game_code, round_code }) {
             y: {
               beginAtZero: false,
               ticks: {
-                callback: (value) => `$${(value / 1000000).toFixed(1)}M`
+                callback: (value) => `$${(value / 1000).toFixed(1)}K`
               }
             }
           },
           plugins: {
             tooltip: {
               callbacks: {
-                label: (context) => `Balance: $${(context.parsed.y / 1000000).toFixed(2)}M`
+                label: (context) => `Value: $${(context.parsed.y).toFixed(2)}`
               }
             }
           }
@@ -100,7 +132,68 @@ function Portfolio({ game_code, round_code }) {
         chartInstance.current.destroy()
       }
     }
-  }, [])
+  }, [portfolio?.value_history])
+
+  useEffect(() => {
+    const checkAuthAndFetchData = async () => {
+      setLoading(true)
+      const authenticated = await isAuthenticated();
+      if (!authenticated) {
+        router.push('/');
+      } else {
+        const idToken = await getIdToken();
+        const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
+        setUser(decodedToken);
+        if (game_code && round_code) {
+          await fetchMarketData();
+        }
+      }
+      setLoading(false)
+    };
+
+    const fetchMarketData = async () => {
+      try {
+        const idToken = await getIdToken();
+        const response = await fetch('http://localhost:5000/get_round_market_data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ gameCode: game_code, roundCode: round_code, idToken }),
+        });
+        if (response.status === 404) {
+          alert('The round has already ended.');
+          router.push('/join');
+          return;
+        }
+        const data = await response.json();
+        setPortfolio(data.portfolio);
+        setRoundIndex(data.roundIndex);
+        setStocks(data.marketData.stocks.map(stock => {
+          const positions = data.portfolio.holdings
+            ? data.portfolio.holdings.filter(h => h.ticker === stock.ticker)
+            : [];
+          const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+          const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          const percentChange = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
+          return {
+            id: stock.ticker,
+            name: stock.ticker,
+            price: stock.price,
+            previousPrice: stock.previous_price,
+            percentChange: percentChange,
+            positions,
+            totalShares,
+            totalHoldings
+          };
+        }));
+      } catch (error) {
+        console.error('Error fetching market data:', error);
+      }
+    };
+
+    checkAuthAndFetchData();
+  }, [game_code, round_code, router, isAuthenticated, getIdToken, setLoading]);
 
   const formatTime = () => {
     const minutes = Math.floor(time / 60)
@@ -119,10 +212,12 @@ function Portfolio({ game_code, round_code }) {
                 <img alt="Profile" src="/globe.svg?height=48&width=48" />
               </Avatar>
               <div>
-                <h1 className="text-xl font-bold">David Curtis</h1>
+                <h1 className="text-xl font-bold">{user ? (user.name || user.email.split('@')[0]) : 'Loading...'}</h1>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-semibold">$1,555,432.50</span>
-                  <span className="text-sm font-medium text-green-600">+15.55%</span>
+                  <span className="text-lg font-semibold">Cash: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold">Total Portfolio: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
                 </div>
               </div>
             </div>
@@ -149,33 +244,54 @@ function Portfolio({ game_code, round_code }) {
             <div className="flex justify-between mb-4">
               <div>
                 <div className="text-sm text-gray-600">Cash:</div>
-                <div className="text-lg font-semibold">$115,000.00</div>
+                <div className="text-lg font-semibold">${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</div>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-600">Assets:</div>
-                <div className="text-lg font-semibold">$1,440,432.50</div>
+                <div className="text-lg font-semibold">${portfolio ? calculateTotalAssets().toFixed(2) : '0.00'}</div>
               </div>
             </div>
             
-            {/* Asset Cards */}
+            {/* Stocks List with Collapsible Positions */}
             <div className="space-y-4">
               {stocks.map((stock) => (
                 <Card key={stock.id} className="overflow-hidden bg-white">
-                  <CardContent className="flex items-center gap-4 p-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                      <ChartIcon className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{stock.name}</h3>
-                        <span className="text-sm text-green-600">{stock.returnPct}</span>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-4 cursor-pointer" onClick={() => toggleStock(stock.id)}>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                        <ChartIcon className="h-6 w-6 text-blue-600" />
                       </div>
-                      <div className="mt-1 flex justify-between text-sm text-gray-600">
-                        <span>Holdings: {stock.holdings}</span>
-                        <span>{stock.shares} shares</span>
-                        <span>{stock.returnPct}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold">{stock.name} - {COMPANY_NAMES[stock.name]}</h3>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm ${stock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {stock.percentChange >= 0 ? '+' : ''}{stock.percentChange.toFixed(2)}%
+                            </span>
+                            {expandedStocks.has(stock.id) ? <ChevronUp /> : <ChevronDown />}
+                          </div>
+                        </div>
+                        <div className="mt-1 flex justify-between text-sm text-gray-600">
+                          <span>Price: ${stock.price.toFixed(2)}</span>
+                          <span>Positions: {stock.positions.length}</span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Collapsible Positions */}
+                    {expandedStocks.has(stock.id) && stock.positions.length > 0 && (
+                      <div className="mt-4 space-y-2 border-t pt-4">
+                        {stock.positions.map((position) => (
+                          <div key={position.id} className="flex justify-between text-sm bg-gray-50 p-2 rounded">
+                            <span>Purchase Price: ${position.price.toFixed(2)}</span>
+                            <span>Shares: {position.shares}</span>
+                            <span className={((stock.price - position.price) * position.shares >= 0) ? 'text-green-600' : 'text-red-600'}>
+                              Profit: ${((stock.price - position.price) * position.shares).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
