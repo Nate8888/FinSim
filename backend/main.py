@@ -34,7 +34,7 @@ firebase_admin.initialize_app(cred)
 def simulate_stock_price(example):
     str_example = json.dumps(example)
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=[
             {
             "role": "system",
@@ -140,7 +140,7 @@ def simulate_stock_price(example):
 
 def generate_news_headlines(next_company):
     response_two = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=[
             {
             "role": "system",
@@ -680,6 +680,88 @@ def close_position():
     room_ref.set(room_data)
 
     return jsonify({'message': 'Position closed successfully', 'portfolio': portfolio}), 200
+
+@app.route('/complete_round', methods=['POST'])
+@cross_origin()
+def complete_round():
+    data = request.get_json()
+    id_token = data.get('idToken')
+    game_code = data.get('gameCode')
+    round_code = data.get('roundCode')
+
+    if not all([id_token, game_code, round_code]):
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+    except Exception as e:
+        return jsonify({'error': 'Invalid ID token'}), 401
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    portfolio = room_data['portfolios'].get(uid)
+    if not portfolio:
+        return jsonify({'error': 'Portfolio not found'}), 404
+
+    # Calculate total portfolio value
+    total_value = portfolio['cash']
+    for holding in portfolio['holdings']:
+        stock_price = next((stock['price'] for stock in room_data['market_data'][-1]['stocks'] if stock['ticker'] == holding['ticker']), None)
+        if stock_price is not None:
+            if holding['shares'] < 0:
+                total_value += (holding['price'] - stock_price) * abs(holding['shares']) + holding['price'] * abs(holding['shares'])
+            else:
+                total_value += stock_price * holding['shares']
+
+    # Append total value to value_history
+    portfolio['value_history'].append(total_value)
+    room_data['portfolios'][uid] = portfolio
+
+    # Mark the user as having completed the round
+    if 'completed_rounds' not in room_data:
+        room_data['completed_rounds'] = {}
+    if round_code not in room_data['completed_rounds']:
+        room_data['completed_rounds'][round_code] = []
+    room_data['completed_rounds'][round_code].append(uid)
+
+    # Save the updated room data
+    room_ref.set(room_data)
+
+    return jsonify({'message': 'Round completed successfully'}), 200
+
+@app.route('/check_round_completion', methods=['POST'])
+@cross_origin()
+def check_round_completion():
+    data = request.get_json()
+    game_code = data.get('gameCode')
+    round_code = data.get('roundCode')
+
+    if not all([game_code, round_code]):
+        return jsonify({'error': 'Missing required parameters'}), 400
+
+    room_ref = db.collection('rooms').document(game_code)
+    room = room_ref.get()
+    if not room.exists:
+        return jsonify({'error': 'Room not found'}), 404
+
+    room_data = room.to_dict()
+    completed_rounds = room_data.get('completed_rounds', {}).get(round_code, [])
+    all_users_completed = len(completed_rounds) == len(room_data['authorizedPlayers'])
+
+    if all_users_completed:
+        current_round_index = next((index for index, round_data in enumerate(room_data['market_data']) if round_data['round_id'] == round_code), None)
+        if current_round_index is None or current_round_index + 1 >= len(room_data['market_data']):
+            return jsonify({'error': 'No more rounds available'}), 400
+
+        new_round_code = room_data['market_data'][current_round_index + 1]['round_id']
+        return jsonify({'allUsersCompleted': True, 'newRoundCode': new_round_code}), 200
+    else:
+        return jsonify({'allUsersCompleted': False}), 200
 
 if __name__ == '__main__':
     # Example usage
