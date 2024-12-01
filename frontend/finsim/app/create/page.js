@@ -46,7 +46,7 @@ export default function Create() {
 
     const fetchRoomDetails = async (gameCode) => {
         try {
-            const response = await axios.get(`http://localhost:5000/get_room?gameCode=${gameCode}`);
+            const response = await axios.get(`https://finsimulator.uc.r.appspot.com/get_room?gameCode=${gameCode}`);
             setPlayers(response.data.players);
         } catch (error) {
             console.error('Error fetching room details:', error);
@@ -93,7 +93,7 @@ export default function Create() {
         setLoading(true);
         try {
             const idToken = await getIdToken();
-            const response = await axios.post('http://localhost:5000/create_room', {
+            const response = await axios.post('https://finsimulator.uc.r.appspot.com/create_room', {
                 gameCode: code,
                 rounds,
                 timePerRound,
@@ -114,7 +114,7 @@ export default function Create() {
         setLoading(true);
         try {
             const idToken = await getIdToken();
-            const response = await axios.post('http://localhost:5000/start_game', {
+            const response = await axios.post('https://finsimulator.uc.r.appspot.com/start_game', {
                 gameCode,
                 idToken
             });
@@ -122,7 +122,7 @@ export default function Create() {
             // Wait a second and check game status
             setTimeout(async () => {
                 try {
-                    const statusResponse = await axios.get(`http://localhost:5000/check_game_status?gameCode=${gameCode}`);
+                    const statusResponse = await axios.get(`https://finsimulator.uc.r.appspot.com/check_game_status?gameCode=${gameCode}`);
                     if (statusResponse.data.started) {
                         router.push(`/${statusResponse.data.gameCode}/${statusResponse.data.roundCode}/news`);
                     }

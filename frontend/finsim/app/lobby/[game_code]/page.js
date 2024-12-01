@@ -31,7 +31,7 @@ export default function Lobby() {
       setLoading(true)
       try {
         const idToken = await getIdToken()
-        const response = await axios.get(`http://localhost:5000/get_room?gameCode=${gameCode}`)
+        const response = await axios.get(`https://finsimulator.uc.r.appspot.com/get_room?gameCode=${gameCode}`)
         setPlayers(response.data.players)
         setIsCreator(response.data.createdBy === user.uid)
       } catch (error) {
@@ -46,7 +46,7 @@ export default function Lobby() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/check_game_status?gameCode=${gameCode}`);
+        const response = await axios.get(`https://finsimulator.uc.r.appspot.com/check_game_status?gameCode=${gameCode}`);
         if (response.data.started) {
           router.push(`/${response.data.gameCode}/${response.data.roundCode}/news`);
         }
@@ -61,7 +61,7 @@ export default function Lobby() {
   const refreshRoomDetails = async () => {
     setLoading(true)
     try {
-      const response = await axios.get(`http://localhost:5000/get_room?gameCode=${gameCode}`)
+      const response = await axios.get(`https://finsimulator.uc.r.appspot.com/get_room?gameCode=${gameCode}`)
       setPlayers(response.data.players)
       setIsCreator(response.data.createdBy === user.uid)
     } catch (error) {
@@ -75,7 +75,7 @@ export default function Lobby() {
     setLoading(true)
     try {
       const idToken = await getIdToken()
-      const response = await axios.post('http://localhost:5000/start_game', {
+      const response = await axios.post('https://finsimulator.uc.r.appspot.com/start_game', {
         gameCode,
         idToken
       })

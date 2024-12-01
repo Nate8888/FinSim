@@ -34,7 +34,7 @@ export default function Join() {
       setLoading(true)
       try {
         const idToken = await getIdToken()
-        const response = await fetch('http://localhost:5000/join_room', {
+        const response = await fetch('https://finsimulator.uc.r.appspot.com/join_room', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import { use } from 'react'
 
 async function checkRoundCompletion(game_code, round_code, router) {
-  const response = await fetch('http://localhost:5000/check_round_completion', {
+  const response = await fetch('https://finsimulator.uc.r.appspot.com/check_round_completion', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

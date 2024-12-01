@@ -15,7 +15,7 @@ import { Tooltip } from "@/components/ui/tooltip"
 import { useAuth } from "@/contexts/AuthContext"
 
 async function checkUserRoundCompletion(game_code, round_code, idToken) {
-  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+  const response = await fetch('https://finsimulator.uc.r.appspot.com/check_user_round_completion', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ function News({ game_code, round_code }) {
     const fetchMarketData = async () => {
       try {
         const idToken = await getIdToken(); // Use the getIdToken function from useAuth
-        const response = await fetch('http://localhost:5000/get_round_market_data', {
+        const response = await fetch('https://finsimulator.uc.r.appspot.com/get_round_market_data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ function News({ game_code, round_code }) {
         if (error.message === 'No user is currently signed in') {
           try {
             const idToken = await getIdToken(true); // Force refresh the token
-            const response = await fetch('http://localhost:5000/get_round_market_data', {
+            const response = await fetch('https://finsimulator.uc.r.appspot.com/get_round_market_data', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -239,7 +239,7 @@ function News({ game_code, round_code }) {
     clearInterval(timer);
     localStorage.removeItem('endTime');
     const idToken = await getIdToken();
-    const response = await fetch('http://localhost:5000/complete_round', {
+    const response = await fetch('https://finsimulator.uc.r.appspot.com/complete_round', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
