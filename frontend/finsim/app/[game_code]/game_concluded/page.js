@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tooltip as UITooltip } from "@/components/ui/tooltip"
 import { use } from 'react'
+import { useLoading } from '@/contexts/loading-context'
 
 export default function Page({ params }) {
   const actualParams = use(params)
@@ -18,6 +19,7 @@ function GameConcluded({ game_code }) {
   const router = useRouter()
   const [leaderboard, setLeaderboard] = useState([])
   const [history, setHistory] = useState([])
+  const { setLoading } = useLoading()
 
   const players = [
     { id: 1, name: "David Curtis", color: "#FF0000" },
@@ -32,10 +34,12 @@ function GameConcluded({ game_code }) {
 
   useEffect(() => {
     async function fetchLeaderboard() {
+      setLoading(true)
       const response = await fetch(`http://127.0.0.1:5000/leaderboard?gameCode=${game_code}`)
       const data = await response.json()
       setLeaderboard(data.leaderboard)
       setHistory(data.history)
+      setLoading(false)
     }
     fetchLeaderboard()
   }, [game_code])
@@ -89,12 +93,12 @@ function GameConcluded({ game_code }) {
                   formatter={(value) => [`$${value.toLocaleString()}`, "Portfolio Value"]}
                   labelFormatter={(label) => `Round ${label}`}
                 />
-                {players.map((player) => (
+                {leaderboard.map((player, index) => (
                   <Line
-                    key={player.id}
+                    key={player.name}
                     type="monotone"
-                    dataKey={`player${player.id}`}
-                    stroke={player.color}
+                    dataKey={player.name}
+                    stroke={players[index]?.color || "#000"}
                     strokeWidth={2}
                     dot={false}
                   />

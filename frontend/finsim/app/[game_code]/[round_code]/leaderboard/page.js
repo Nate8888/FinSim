@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Tooltip as UITooltip } from "@/components/ui/tooltip"
 import { use } from 'react'
+import { useAuth } from "@/contexts/AuthContext"
 
 const data = [
     { round: 1, player1: 1000000, player2: 1200000, player3: 800000, player4: 950000, player5: 1100000, player6: 850000, player7: 1050000, player8: 900000 },
@@ -57,9 +58,7 @@ export default function Page({ params }) {
 
 function Leaderboard({ game_code, round_code }) {
     const router = useRouter()
-    // const searchParams = useSearchParams()
-    // const game_code = searchParams.get('game_code')
-    // const round_code = searchParams.get('round_code')
+    const { isAuthenticated, getIdToken } = useAuth();
     const [time, setTime] = useState(90)
     const [leaderboard, setLeaderboard] = useState([])
     const [history, setHistory] = useState([])
@@ -157,12 +156,12 @@ function Leaderboard({ game_code, round_code }) {
                                     formatter={(value) => [`$${value.toLocaleString()}`, "Portfolio Value"]}
                                     labelFormatter={(label) => `Round ${label}`}
                                 />
-                                {players.map((player) => (
+                                {leaderboard.map((player, index) => (
                                     <Line
-                                        key={player.id}
+                                        key={player.name}
                                         type="monotone"
-                                        dataKey={`player${player.id}`}
-                                        stroke={player.color}
+                                        dataKey={player.name}
+                                        stroke={players[index]?.color || "#000"}
                                         strokeWidth={2}
                                         dot={false}
                                     />

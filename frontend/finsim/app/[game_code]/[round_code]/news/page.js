@@ -62,6 +62,7 @@ function News({ game_code, round_code }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [stocks, setStocks] = useState([]);
+  const [timer, setTimer] = useState(null);
 
   useEffect(() => {
     const storedEndTime = localStorage.getItem('endTime');
@@ -75,18 +76,20 @@ function News({ game_code, round_code }) {
       localStorage.setItem('endTime', endTime.getTime());
     }
 
-    const timer = setInterval(() => {
+    const timerInterval = setInterval(() => {
       const currentTime = new Date();
       const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
       setTime(timeDiff);
 
       if (timeDiff <= 0) {
-        clearInterval(timer);
+        clearInterval(timerInterval);
         handleSubmit();  // Call handleSubmit when the round ends
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    setTimer(timerInterval);
+
+    return () => clearInterval(timerInterval);
   }, []);
 
   useEffect(() => {
@@ -232,8 +235,10 @@ function News({ game_code, round_code }) {
   };
 
   const handleSubmit = async () => {
-    setLoading(true)
-    const idToken = await getIdToken()
+    setLoading(true);
+    clearInterval(timer);
+    localStorage.removeItem('endTime');
+    const idToken = await getIdToken();
     const response = await fetch('http://localhost:5000/complete_round', {
       method: 'POST',
       headers: {
@@ -244,16 +249,15 @@ function News({ game_code, round_code }) {
         gameCode: game_code,
         roundCode: round_code,
       }),
-    })
+    });
 
     if (response.ok) {
-      router.push(`/${game_code}/${round_code}/wait`)
-      // Remove the setInterval for check_round_completion
+      router.push(`/${game_code}/${round_code}/wait`);
     } else {
-      const errorData = await response.json()
-      alert(`Failed to complete round: ${errorData.error}`)
+      const errorData = await response.json();
+      alert(`Failed to complete round: ${errorData.error}`);
     }
-    setLoading(false)
+    setLoading(false);
   }
 
   return (

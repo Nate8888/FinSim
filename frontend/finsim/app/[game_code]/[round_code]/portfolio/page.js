@@ -59,6 +59,7 @@ function Portfolio({ game_code, round_code }) {
   const [portfolio, setPortfolio] = useState(null);
   const [stocks, setStocks] = useState([]);
   const [roundIndex, setRoundIndex] = useState(null);
+  const [timer, setTimer] = useState(null);
 
   const COMPANY_NAMES = {
     'AAPL': 'Apple Inc.',
@@ -112,18 +113,20 @@ function Portfolio({ game_code, round_code }) {
       localStorage.setItem('endTime', endTime.getTime());
     }
 
-    const timer = setInterval(() => {
+    const timerInterval = setInterval(() => {
       const currentTime = new Date();
       const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
       setTime(timeDiff);
 
       if (timeDiff <= 0) {
-        clearInterval(timer);
+        clearInterval(timerInterval);
         handleSubmit();  // Call handleSubmit when the round ends
       }
     }, 1000);
 
-    return () => clearInterval(timer);
+    setTimer(timerInterval);
+
+    return () => clearInterval(timerInterval);
   }, []);
 
   useEffect(() => {
@@ -248,6 +251,8 @@ function Portfolio({ game_code, round_code }) {
 
   async function handleSubmit() {
     setLoading(true);
+    clearInterval(timer);
+    localStorage.removeItem('endTime');
     const idToken = await getIdToken();
     const response = await fetch('http://localhost:5000/complete_round', {
       method: 'POST',
