@@ -381,6 +381,30 @@ function Trading({ game_code, round_code }) {
     setLoading(false);
   }
 
+  async function handleSubmit() {
+    setLoading(true);
+    const idToken = await getIdToken();
+    const response = await fetch('http://localhost:5000/complete_round', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idToken,
+        gameCode: game_code,
+        roundCode: round_code,
+      }),
+    });
+  
+    if (response.ok) {
+      router.push(`/${game_code}/${round_code}/wait`);
+    } else {
+      const errorData = await response.json();
+      alert(`Failed to complete round: ${errorData.error}`);
+    }
+    setLoading(false);
+  }
+
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="min-h-screen bg-gradient-to-b from-yellow-50 to-white pb-16">
@@ -406,7 +430,7 @@ function Trading({ game_code, round_code }) {
                 <Info className="h-5 w-5 text-gray-600" />
               </Tooltip>
               <span className="rounded-lg bg-gray-100 px-3 py-2 font-mono text-lg">{formatTime()}</span>
-              <Button className="bg-green-600 hover:bg-green-700">Submit</Button>
+              <Button className="bg-green-600 hover:bg-green-700" onClick={handleSubmit}>Submit</Button>
             </div>
           </div>
 
