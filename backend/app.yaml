@@ -1,4 +1,4 @@
-runtime: python310  # Use the appropriate Python version
+runtime: python39  # Use the appropriate Python version
 env: standard
 
 handlers:
