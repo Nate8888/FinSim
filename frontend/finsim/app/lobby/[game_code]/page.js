@@ -16,6 +16,7 @@ export default function Lobby() {
   const { game_code: gameCode } = useParams()
 
   useEffect(() => {
+    localStorage.removeItem('endTime');
     const checkAuth = async () => {
       const authenticated = await isAuthenticated()
       if (!authenticated) {

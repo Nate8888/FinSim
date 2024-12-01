@@ -41,13 +41,33 @@ function News({ game_code, round_code }) {
   const [portfolio, setPortfolio] = useState(null)
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [stocks, setStocks] = useState([]);
 
   useEffect(() => {
+    const storedEndTime = localStorage.getItem('endTime');
+    let endTime;
+    if (storedEndTime) {
+      endTime = new Date(parseInt(storedEndTime, 10));
+    } else {
+      const storedTimePerRound = localStorage.getItem('timePerRound');
+      const roundDuration = storedTimePerRound ? parseInt(storedTimePerRound, 10) : 90;
+      endTime = new Date(Date.now() + roundDuration * 1000);
+      localStorage.setItem('endTime', endTime.getTime());
+    }
+
     const timer = setInterval(() => {
-      setTime((prevTime) => (prevTime > 0 ? prevTime - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+      const currentTime = new Date();
+      const timeDiff = Math.max(0, Math.floor((endTime - currentTime) / 1000));
+      setTime(timeDiff);
+
+      if (timeDiff <= 0) {
+        clearInterval(timer);
+        handleSubmit();  // Call handleSubmit when the round ends
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
@@ -82,6 +102,25 @@ function News({ game_code, round_code }) {
         const data = await response.json();
         setMarketData(data.marketData);
         setPortfolio(data.portfolio);
+        setStocks(data.marketData.stocks.map(stock => {
+          const positions = data.portfolio.holdings
+            ? data.portfolio.holdings.filter(h => h.ticker === stock.ticker)
+            : [];
+          const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+          const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+          const percentChange = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
+          return {
+            id: stock.ticker,
+            name: stock.ticker,
+            price: stock.price,
+            previousPrice: stock.previous_price,
+            percentChange: percentChange,
+            positions,
+            totalShares,
+            totalHoldings
+          };
+        }));
+        localStorage.setItem('timePerRound', data.timePerRound);  // Store timePerRound in localStorage
       } catch (error) {
         if (error.message === 'No user is currently signed in') {
           try {
@@ -101,6 +140,24 @@ function News({ game_code, round_code }) {
             const data = await response.json();
             setMarketData(data.marketData);
             setPortfolio(data.portfolio);
+            setStocks(data.marketData.stocks.map(stock => {
+              const positions = data.portfolio.holdings
+                ? data.portfolio.holdings.filter(h => h.ticker === stock.ticker)
+                : [];
+              const totalShares = positions.reduce((sum, pos) => sum + pos.shares, 0);
+              const totalHoldings = positions.reduce((sum, pos) => sum + pos.shares * pos.price, 0);
+              const percentChange = ((stock.price - stock.previous_price) / stock.previous_price) * 100;
+              return {
+                id: stock.ticker,
+                name: stock.ticker,
+                price: stock.price,
+                previousPrice: stock.previous_price,
+                percentChange: percentChange,
+                positions,
+                totalShares,
+                totalHoldings
+              };
+            }));
           } catch (refreshError) {
             console.error('Error fetching market data after token refresh:', refreshError);
           }
@@ -133,6 +190,21 @@ function News({ game_code, round_code }) {
       content: newsItem
     }))
   ) : [];
+
+  const calculateTotalAssets = () => {
+    return stocks.reduce((total, stock) => {
+      const positions = stock.positions;
+      const stockPrice = stock.price;
+      const totalHoldings = positions.reduce((sum, pos) => {
+        if (pos.shares < 0) {
+          return sum + (pos.price - stockPrice) * Math.abs(pos.shares) + pos.price * Math.abs(pos.shares);
+        } else {
+          return sum + stockPrice * pos.shares;
+        }
+      }, 0);
+      return total + totalHoldings;
+    }, 0);
+  };
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -174,8 +246,8 @@ function News({ game_code, round_code }) {
                 <span className="text-md font-semibold">Cash: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-md font-semibold">Total Portfolio: ${portfolio ? portfolio.cash.toFixed(2) : '0.00'}</span>
-                <span className="text-sm font-medium text-green-600">+10.55%</span>
+                <span className="text-md font-semibold">Total Portfolio: ${portfolio ? (portfolio.cash + calculateTotalAssets()).toFixed(2) : '0.00'}</span>
+                {/* <span className="text-sm font-medium text-green-600">+10.55%</span> */}
               </div>
             </div>
           </div>
