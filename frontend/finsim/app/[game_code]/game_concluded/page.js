@@ -35,7 +35,7 @@ function GameConcluded({ game_code }) {
   useEffect(() => {
     async function fetchLeaderboard() {
       setLoading(true)
-      const response = await fetch(`http://127.0.0.1:5000/leaderboard?gameCode=${game_code}`)
+      const response = await fetch(`https://finsimulator.uc.r.appspot.com/leaderboard?gameCode=${game_code}`)
       const data = await response.json()
       setLeaderboard(data.leaderboard)
       setHistory(data.history)

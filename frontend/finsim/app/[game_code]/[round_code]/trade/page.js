@@ -24,7 +24,7 @@ function ErrorFallback({error}) {
 }
 
 async function checkUserRoundCompletion(game_code, round_code, idToken) {
-  const response = await fetch('http://localhost:5000/check_user_round_completion', {
+  const response = await fetch('https://finsimulator.uc.r.appspot.com/check_user_round_completion', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ function Trading({ game_code, round_code }) {
     const fetchMarketData = async () => {
       try {
         const idToken = await getIdToken();
-        const response = await fetch('http://localhost:5000/get_round_market_data', {
+        const response = await fetch('https://finsimulator.uc.r.appspot.com/get_round_market_data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -242,7 +242,7 @@ function Trading({ game_code, round_code }) {
   async function handleBuy() {
     setLoading(true)
     const idToken = await getIdToken()
-    const response = await fetch('http://localhost:5000/transact', {
+    const response = await fetch('https://finsimulator.uc.r.appspot.com/transact', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -300,7 +300,7 @@ function Trading({ game_code, round_code }) {
   async function handleSell() {
     setLoading(true)
     const idToken = await getIdToken()
-    const response = await fetch('http://localhost:5000/transact', {
+    const response = await fetch('https://finsimulator.uc.r.appspot.com/transact', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -373,7 +373,7 @@ function Trading({ game_code, round_code }) {
   async function handleClosePosition(positionId) {
     setLoading(true);
     const idToken = await getIdToken();
-    const response = await fetch('http://localhost:5000/close_position', {
+    const response = await fetch('https://finsimulator.uc.r.appspot.com/close_position', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -430,7 +430,7 @@ function Trading({ game_code, round_code }) {
     clearInterval(timer);
     localStorage.removeItem('endTime');
     const idToken = await getIdToken();
-    const response = await fetch('http://localhost:5000/complete_round', {
+    const response = await fetch('https://finsimulator.uc.r.appspot.com/complete_round', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -525,7 +525,9 @@ function Trading({ game_code, round_code }) {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold">{selectedStock.name} - {COMPANY_NAMES[selectedStock.name]}</h3>
-                          <span className="text-sm text-green-600">+{selectedStock.percentChange.toFixed(2)}%</span>
+                          <span className={`text-sm ${selectedStock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedStock.percentChange >= 0 ? '+' : ''}{selectedStock.percentChange.toFixed(2)}%
+                          </span>
                         </div>
                         <div className="mt-1 flex justify-between text-sm text-gray-600">
                           <span>Holdings: ${selectedStock.totalHoldings.toLocaleString()}</span>

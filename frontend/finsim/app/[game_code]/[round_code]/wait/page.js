@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation'
 import { use } from 'react'
 
 async function checkRoundCompletion(game_code, round_code, router) {
-  const response = await fetch('http://localhost:5000/check_round_completion', {
+  const response = await fetch('https://finsimulator.uc.r.appspot.com/check_round_completion', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ async function checkRoundCompletion(game_code, round_code, router) {
   if (response.ok) {
     const data = await response.json();
     if (data.allUsersCompleted) {
-      if (data.newRoundCode && data.newRoundCode !== round_code && data.newRoundCode !== 'null') {
+      if (data.newRoundCode && data.newRoundCode !== round_code && data.newRoundCode !== 'null' && data.newRoundCode !== '') {
         router.push(`/${game_code}/${data.newRoundCode}/portfolio`);
       } else {
         router.push(`/${game_code}/game_concluded`);
