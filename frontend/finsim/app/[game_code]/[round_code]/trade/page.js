@@ -525,7 +525,9 @@ function Trading({ game_code, round_code }) {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <h3 className="font-semibold">{selectedStock.name} - {COMPANY_NAMES[selectedStock.name]}</h3>
-                          <span className="text-sm text-green-600">+{selectedStock.percentChange.toFixed(2)}%</span>
+                          <span className={`text-sm ${selectedStock.percentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {selectedStock.percentChange >= 0 ? '+' : ''}{selectedStock.percentChange.toFixed(2)}%
+                          </span>
                         </div>
                         <div className="mt-1 flex justify-between text-sm text-gray-600">
                           <span>Holdings: ${selectedStock.totalHoldings.toLocaleString()}</span>
