@@ -284,7 +284,11 @@ function Portfolio({ game_code, round_code }) {
           const checkData = await checkResponse.json();
           if (checkData.allUsersCompleted) {
             clearInterval(checkCompletionInterval);
-            router.push(`/${game_code}/${checkData.newRoundCode}/portfolio`);
+            if (checkData.newRoundCode && checkData.newRoundCode !== round_code && checkData.newRoundCode !== 'null' && checkData.newRoundCode !== '') {
+              router.push(`/${game_code}/${checkData.newRoundCode}/portfolio`);
+            } else {
+              router.push(`/${game_code}/game_concluded`);
+            }
           }
         }
       }, 5000); // Check every 5 seconds

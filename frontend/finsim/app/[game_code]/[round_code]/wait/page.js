@@ -23,7 +23,7 @@ async function checkRoundCompletion(game_code, round_code, router) {
   if (response.ok) {
     const data = await response.json();
     if (data.allUsersCompleted) {
-      if (data.newRoundCode && data.newRoundCode !== round_code && data.newRoundCode !== 'null') {
+      if (data.newRoundCode && data.newRoundCode !== round_code && data.newRoundCode !== 'null' && data.newRoundCode !== '') {
         router.push(`/${game_code}/${data.newRoundCode}/portfolio`);
       } else {
         router.push(`/${game_code}/game_concluded`);
