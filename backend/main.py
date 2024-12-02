@@ -67,8 +67,8 @@ def simulate_stock_price(example):
             "role": "user",
             "content": [
                 {
-                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 100,\n  \"news\": [\n    \"MSFT reports hiring another 10 thosand new graduates.\"\n  ]\n}",
-                "type": "text"
+                "type": "text",
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 100,\n  \"news\": [\n    \"MSFT reports hiring another 10 thosand new graduates.\"\n  ]\n}"
                 }
             ]
             },
@@ -103,8 +103,8 @@ def simulate_stock_price(example):
             "role": "user",
             "content": [
                 {
-                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 500,\n  \"news\": [\n    \"Microsoft Announces Mind-Controlled Video Games: 'Xbox Your Brain'!\",\n    \"Microsoft's New AI-Powered Clippy Crashes Stock Trading: 'Paperclips Everywhere!'\",\n    \"Windows 13 Rollout Stumbles as Users Complain of Unexpected Blue Screens\"\n  ]\n}",
-                "type": "text"
+                "type": "text",
+                "text": "{\n  \"asset\": \"MSFT\",\n  \"current_price\": 500,\n  \"news\": [\n    \"Microsoft Announces Mind-Controlled Video Games: 'Xbox Your Brain'!\",\n    \"Microsoft's New AI-Powered Clippy Crashes Stock Trading: 'Paperclips Everywhere!'\",\n    \"Windows 13 Rollout Stumbles as Users Complain of Unexpected Blue Screens\"\n  ]\n}"
                 }
             ]
             },

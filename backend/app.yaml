@@ -1,6 +1,8 @@
 runtime: python310  # Use the appropriate Python version
 env: standard
 
+entrypoint: gunicorn -b :$PORT -w 1 main:app
+
 handlers:
   - url: /.*
     script: auto

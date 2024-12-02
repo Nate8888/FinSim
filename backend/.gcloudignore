@@ -21,3 +21,4 @@ __pycache__/
 venv
 market_data.json
 market_data2.json
+ai_simulation.py
