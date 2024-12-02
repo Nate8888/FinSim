@@ -262,6 +262,58 @@ def generate_news_headlines(next_company):
     )
     return json.loads(response_two.choices[0].message.content)
 
+def generate_global_news_headline():
+    response_two = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+            "role": "system",
+            "content": [
+                {
+                "type": "text",
+                "text": "Generate three positive or negative news headlines related to the world, economy, or politics for a stock trading game. The headlines should be informative, relevant to global news, and present impactful scenarios that could influence stock trading decisions. Mix both positive and negative news to simulate realistic market conditions. \n\n# Requirements:\n- Headline topics should be relevant to global news concerning politics, economy, or significant regional/world events.\n- Headlines must be clear, informative, and impactful.\n- Avoid repetition in news themes to provide variety in the scenario.\n- Include a mix of both optimistic and pessimistic viewpoints.\n\n# Output Format\n\nThe response must be in JSON format pointing to an array with exactly three string headlines:\n```\n{\n  \"headlines\": [\n    \"[headline_1]\",\n    \"[headline_2]\",\n    \"[headline_3]\"\n  ]\n}\n```\n\n# Headlines Characteristics\n- Each headline should convey either a positive or negative impact, e.g., an economic growth report or political turmoil.\n- Each headline should be presented in a format that would affect market sentiment clearly (e.g. \"global economy growth surpasses estimates\" or \"political conflict in region X leads to unrest\").\n  \n# Examples\n\n### Example 1:\n\n**Input Context**: Generate news headlines.\n\n**Output**:\n{\n  \"headlines\": [\n    \"Global market booms as tech companies report record-breaking profits\",\n    \"Political turmoil in Region X sends currencies in freefall amid rising tensions\",\n    \"Trade agreement between the EU and Asian economies promises significant growth by year-end\"\n  ]\n}\n\n### Example 2:\n\n**Input Context**: Generate news headlines.\n\n**Output**:\n{\n  \"headlines\": [\n    \"Massive infrastructure investment approved by U.S. government boosts hopes for economic recovery\",\n    \"Uncertainty rises as international sanctions weaken Region Y's economy, causing global disruptions\",\n    \"Tourism revival in Southeast Asia accelerates regional economic recovery beyond expectations\"\n  ]\n}\n\n(Note: In real examples, a mix of optimistic and pessimistic viewpoints is common. Vary between topics such as trade, conflict, policies, and technological advances.)\n  \n# Notes\n- Headlines should ideally invoke immediate emotional responses of optimism or pessimism, simulating real financial impacts.\n- Keep the headlines in line with typical news formats—short, descriptive, and informative.\n- Avoid overly sensational or unrealistic headlines for better immersion in the trading game scenario."
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": "Generate news headlines"
+                }
+            ]
+            },
+            {
+            "role": "assistant",
+            "content": [
+                {
+                "type": "text",
+                "text": "{\n  \"headlines\": [\n    \"Emerging markets rally as new trade deal expands opportunities across South America\",\n    \"Escalating tensions in the Middle East disrupts global oil supply, causing market volatility\",\n    \"Surging demand for green technology fuels robust growth in renewable energy stocks worldwide\"\n  ]\n}"
+                }
+            ]
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": "Generate news headlines"
+                }
+            ]
+            }
+        ],
+        temperature=1,
+        max_tokens=2000,
+        top_p=1,
+        frequency_penalty=0,
+        presence_penalty=0,
+        response_format={
+            "type": "json_object"
+        }
+    )
+    return json.loads(response_two.choices[0].message.content)
+
 def say_hello():
     return 'Hello, World!'
 
@@ -286,10 +338,8 @@ def generate_company_news(ticker, num_articles):
     return headlines['headlines'][:num_articles]
 
 def generate_global_news():
-    global_news = []
-    for _ in range(3):
-        global_news.append("Ambiguous global news")
-    return global_news
+    headlines = generate_global_news_headline()
+    return headlines['headlines']
 
 def simulate_market(previous_round=None):
     if previous_round is None:
