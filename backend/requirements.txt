@@ -6,3 +6,4 @@ google-auth
 firebase-admin
 yfinance
 openai
+gunicorn

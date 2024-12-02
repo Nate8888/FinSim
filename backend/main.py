@@ -863,7 +863,7 @@ def check_user_round_completion():
 
     return jsonify({'userCompleted': user_completed}), 200
 
-@app.route('/readines_check', methods=['GET'])
+@app.route('/readines_check', methods=['GET', 'POST'])
 @cross_origin()
 def readiness_check():
     return jsonify({'status': 'ready'}), 200
